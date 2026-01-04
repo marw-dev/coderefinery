@@ -390,7 +390,7 @@ class Tools:
         filter_text = f" with filters ({', '.join(filters)})" if filters else ""
 
         return (
-            f"**❌ No Results Found**\n\n"
+            f"**No Results Found**\n\n"
             f"Query: `{query}`{filter_text}\n\n"
             f"The codebase has **{total_chunks}** indexed chunks, but none matched your search.\n\n"
             "**Suggestions:**\n"
