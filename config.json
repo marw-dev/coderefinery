@@ -1,0 +1,18 @@
+{
+  "project_path": "/",
+  "server": {
+    "port": "8080"
+  },
+  "ollama": {
+    "base_url": "http://localhost:11434",
+    "model": "nomic-embed-text"
+  },
+  "indexer": {
+    "supported_extensions": {
+      ".go": "go",
+      ".py": "python",
+      ".rs": "rust"
+    },
+    "exclude_paths": ["node_modules", ".git", "vendor"]
+  }
+}
