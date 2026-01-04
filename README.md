@@ -175,7 +175,7 @@ ollama pull deepseek-r1:14b
 
 1. Clone and initialize:
 ```bash
-git clone <your-repo>
+git clone https://github.com/marw-dev/coderefinery.git
 cd coderefinery
 go mod init coderefinery
 ```
