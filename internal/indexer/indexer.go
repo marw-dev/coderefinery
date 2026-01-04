@@ -336,7 +336,7 @@ func (idx *Indexer) Watch(ctx context.Context, rootPath string) error {
 				if needsReindex {
 					log.Println("File changes detected, reindexing...")
 					if err := idx.BuildIndex(ctx, rootPath); err != nil {
-						log.Printf("❌ Reindex failed: %v", err)
+						log.Printf("Reindex failed: %v", err)
 					}
 					needsReindex = false
 				}

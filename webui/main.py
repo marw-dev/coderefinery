@@ -75,7 +75,7 @@ class Tools:
             - search_codebase("error handling middleware", min_score=0.5)
         """
 
-        self._emit_status(__event_emitter__, f"🔍 Searching: {query}", False)
+        self._emit_status(__event_emitter__, f"Searching: {query}", False)
 
         # Validate and normalize inputs
         limit = self._validate_limit(limit)
@@ -125,14 +125,12 @@ class Tools:
             took = data.get("took", "unknown")
 
             if not results:
-                self._emit_status(__event_emitter__, "❌ No relevant code found", True)
+                self._emit_status(__event_emitter__, "No relevant code found", True)
                 return self._format_no_results(query, total_chunks, payload)
 
             # Format and return results
             formatted = self._format_results(results, query, took, payload)
-            self._emit_status(
-                __event_emitter__, f"✅ Found {len(results)} snippets", True
-            )
+            self._emit_status(__event_emitter__, f"Found {len(results)} snippets", True)
 
             return formatted
 
@@ -405,7 +403,7 @@ class Tools:
 
     def _format_error(self, title: str, detail: str = "") -> str:
         """Format error messages with troubleshooting"""
-        message = f"**⚠️ {title}**\n\n"
+        message = f"**{title}**\n\n"
 
         if detail:
             message += f"{detail}\n\n"
