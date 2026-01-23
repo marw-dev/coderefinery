@@ -1,0 +1,54 @@
+services:
+  app:
+    build: .
+    container_name: coderefinery_app
+    ports:
+      - "8080:8080"
+    environment:
+      - REFINERY_ENVIRONMENT=production
+      - REFINERY_DATABASE_SOURCE=postgres://refinery:secret@postgres:5432/coderefinery?sslmode=disable
+      - REFINERY_OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      - postgres
+    volumes:
+      - ./config.yaml:/app/config.yaml
+
+  # PostgreSQL mit Vektor-Support
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: coderefinery_db
+    environment:
+      POSTGRES_USER: refinery
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: coderefinery
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data_v2:/var/lib/postgresql/data
+      - ./migrations/001_initial_schema.up.sql:/docker-entrypoint-initdb.d/init.sql
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # UI
+      - "14268:14268" # Collector HTTP
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+
+  redis:
+    image: redis:alpine
+    container_name: coderefinery-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data_v2:

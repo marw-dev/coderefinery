@@ -1,0 +1,64 @@
+environment: dev
+
+server:
+  port: "8080"
+  read_timeout: 30s
+  write_timeout: 30s
+  max_request_size: 52428800 # 50MB
+
+database:
+  driver: postgres
+  source: "postgres://postgres:postgres@localhost:5432/coderefinery?sslmode=disable"
+  max_open_conns: 50
+  max_idle_conns: 10
+  conn_max_lifetime: 5m
+
+llm:
+  service: "ollama"
+  host: "http://localhost:11434"
+  embedding_model: "nomic-embed-text"
+  timeout: 60s
+
+indexer:
+  supported_extensions:
+    go: go
+    py: python
+    js: javascript
+    ts: typescript
+  exclude_paths:
+    - node_modules
+    - vendor
+    - .git
+  min_chunk_size: 50
+  max_chunk_size: 1500
+  batch_size: 10
+  watch_debounce: 2s
+
+auth:
+  jwt_secret: "bitte-in-production-aendern-sehr-geheim"
+  jwt_expiry: 24h
+
+search:
+  default_limit: 10
+  max_limit: 50
+  min_score: 0.5
+
+# Observability
+observability:
+  logging:
+    level: "debug" # 'debug' ist gut für Dev, 'info' für Prod
+    format: "console" # 'console' (hübsch) oder 'json'
+  metrics:
+    enabled: true
+    path: "/metrics"
+    tracing:
+      enabled: true
+      provider: "otlp"
+      endpoint: "localhost:4318"
+      sampling_rate: 1.0
+      service_name: "coderefinery"
+
+cache:
+  enabled: true
+  redis_url: "redis://localhost:6379/0"
+  ttl: 1h

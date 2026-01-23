@@ -1,0 +1,73 @@
+scalar Time
+
+type Repository {
+  id: ID!
+  name: String!
+  path: String!
+  status: String!
+  lastIndexed: Time
+  fileCount: Int!
+  chunkCount: Int!
+  errorMsg: String
+}
+
+type SearchResult {
+  filePath: String!
+  startLine: Int!
+  endLine: Int!
+  content: String!
+  score: Float!
+  signature: String
+}
+
+type Query {
+  # Liste aller überwachten Repositories
+  repositories: [Repository!]!
+  # Die eigentliche Suche
+  search(query: String!, limit: Int): [SearchResult!]!
+}
+
+type Mutation {
+  # Ein neues Repo hinzufügen und indexieren
+  createRepository(name: String!, path: String!): Repository!
+  # Ein existierendes Repo neu indexieren
+  reindexRepository(id: ID!): Boolean!
+  # Ein Repo entfernen
+  deleteRepository(id: ID!): Boolean!
+}
+
+type User {
+  id: ID!
+  username: String!
+  role: String!
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+extend type Query {
+  # Gibt den aktuell eingeloggten User zurück
+  me: User
+}
+
+extend type Mutation {
+  register(username: String!, password: String!): AuthPayload!
+  login(username: String!, password: String!): AuthPayload!
+}
+
+type LLMInfo {
+  currentModel: String!
+  availableModels: [String!]!
+}
+
+extend type Query {
+  # Gibt Infos über das LLM und verfügbare Modelle zurück
+  llmInfo: LLMInfo!
+}
+
+extend type Mutation {
+  # Setzt das Modell neu. Achtung: Sollte Reindex triggern!
+  setEmbeddingModel(model: String!): Boolean!
+}

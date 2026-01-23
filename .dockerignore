@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# IDEs
+.vscode
+.idea
+
+# Go Build Artifacts
+vendor
+bin
+*.exe
+*.test
+
+# Local Data
+refinery.db
+*.log
+
+# Docker
+docker-compose.yaml
+Dockerfile
+
+# Tests
+tests
