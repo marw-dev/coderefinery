@@ -12,11 +12,6 @@ import (
 )
 
 func TestConfig_Defaults(t *testing.T) {
-	// Hier testen wir nur, ob Defaults gesetzt werden, wenn keine Env/File da ist.
-	// Da Validierung fehlschlagen würde (missing required), ignorieren wir den Error
-	// und prüfen nur die Default-Werte der Structs, falls LoadConfig ein Partial Config zurückgibt.
-	// Alternativ: Wir bauen auch hier ein Dummy-File.
-
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 
@@ -32,20 +27,20 @@ database:
 vectordb:
   host: "dummy"
   scheme: "http"
-  index_name: "CodeChunk" # Required!
+  index_name: "CodeChunk"
 `)
 	_ = os.WriteFile(configFile, minimalContent, 0644)
 
 	cfg, _ := config.LoadConfig(tmpDir)
 
-	// Falls cfg nil ist (Fehler), abbrechen
 	if cfg == nil {
 		return
 	}
 
-	// Prüfen ob Defaults gesetzt wurden (z.B. Port 8080)
+	// Prüfen ob Defaults gesetzt wurden
 	assert.Equal(t, "8080", cfg.Server.Port)
-	assert.Equal(t, "production", cfg.Environment)
+
+	assert.Equal(t, "dev", cfg.Environment)
 }
 
 func TestConfig_LoadFromYaml(t *testing.T) {

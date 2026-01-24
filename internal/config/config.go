@@ -191,40 +191,71 @@ func LoadConfig(path string) (*Config, error) {
 	v := viper.New()
 
 	defaults := NewDefault()
-	v.SetDefault("environment", defaults.Environment)
-	v.SetDefault("server", defaults.Server)
-	v.SetDefault("indexer", defaults.Indexer)
-	v.SetDefault("database", defaults.Database)
 
-	// Datenbank Defaults im Detail setzen
+	// Environment
+	v.SetDefault("environment", defaults.Environment)
+
+	// Server
+	v.SetDefault("server.port", defaults.Server.Port)
+	v.SetDefault("server.read_timeout", defaults.Server.ReadTimeout)
+	v.SetDefault("server.write_timeout", defaults.Server.WriteTimeout)
+	v.SetDefault("server.max_request_size", defaults.Server.MaxRequestSize)
+	v.SetDefault("server.enable_cors", defaults.Server.EnableCORS)
+	v.SetDefault("server.allowed_origins", defaults.Server.AllowedOrigins)
+
+	// Indexer
+	v.SetDefault("indexer.supported_extensions", defaults.Indexer.SupportedExts)
+	v.SetDefault("indexer.exclude_paths", defaults.Indexer.ExcludePaths)
+	v.SetDefault("indexer.min_chunk_size", defaults.Indexer.MinChunkSize)
+	v.SetDefault("indexer.max_chunk_size", defaults.Indexer.MaxChunkSize)
+	v.SetDefault("indexer.batch_size", defaults.Indexer.BatchSize)
+	v.SetDefault("indexer.watch_debounce", defaults.Indexer.WatchDebounce)
+
+	// Database
+	v.SetDefault("database.driver", defaults.Database.Driver)
+	v.SetDefault("database.source", defaults.Database.Source)
 	v.SetDefault("database.max_open_conns", defaults.Database.MaxOpenConns)
 	v.SetDefault("database.max_idle_conns", defaults.Database.MaxIdleConns)
 	v.SetDefault("database.conn_max_lifetime", defaults.Database.ConnMaxLifetime)
 
-	// VectorDB Defaults setzen
-	v.SetDefault("vectordb", defaults.VectorDB)
+	// VectorDB
+	v.SetDefault("vectordb.host", defaults.VectorDB.Host)
+	v.SetDefault("vectordb.scheme", defaults.VectorDB.Scheme)
+	v.SetDefault("vectordb.api_key", defaults.VectorDB.APIKey)
+	v.SetDefault("vectordb.index_name", defaults.VectorDB.IndexName)
+	v.SetDefault("vectordb.timeout", defaults.VectorDB.Timeout)
 
-	v.SetDefault("auth", defaults.Auth)
-	v.SetDefault("llm", defaults.LLM)
-	v.SetDefault("search", defaults.Search)
+	// Auth
+	v.SetDefault("auth.jwt_secret", defaults.Auth.JWTSecret)
+	v.SetDefault("auth.jwt_expiry", defaults.Auth.JWTExpiry)
 
-	// Logging
+	// LLM
+	v.SetDefault("llm.service", defaults.LLM.Service)
+	v.SetDefault("llm.host", defaults.LLM.Host)
+	v.SetDefault("llm.embedding_model", defaults.LLM.EmbeddingModel)
+	v.SetDefault("llm.timeout", defaults.LLM.Timeout)
+
+	// Search
+	v.SetDefault("search.default_limit", defaults.Search.DefaultLimit)
+	v.SetDefault("search.max_limit", defaults.Search.MaxLimit)
+	v.SetDefault("search.min_score", defaults.Search.MinScore)
+
+	// Observability
 	v.SetDefault("observability.logging.level", defaults.Observability.Logging.Level)
 	v.SetDefault("observability.logging.format", defaults.Observability.Logging.Format)
-
-	// Metrics
 	v.SetDefault("observability.metrics.enabled", defaults.Observability.Metrics.Enabled)
 	v.SetDefault("observability.metrics.path", defaults.Observability.Metrics.Path)
 	v.SetDefault("observability.metrics.port", defaults.Observability.Metrics.Port)
-
-	// Tracing
 	v.SetDefault("observability.tracing.enabled", defaults.Observability.Tracing.Enabled)
 	v.SetDefault("observability.tracing.provider", defaults.Observability.Tracing.Provider)
 	v.SetDefault("observability.tracing.endpoint", defaults.Observability.Tracing.Endpoint)
 	v.SetDefault("observability.tracing.sampling_rate", defaults.Observability.Tracing.SamplingRate)
 	v.SetDefault("observability.tracing.service_name", defaults.Observability.Tracing.ServiceName)
 
-	v.SetDefault("cache", defaults.Cache)
+	// Cache
+	v.SetDefault("cache.enabled", defaults.Cache.Enabled)
+	v.SetDefault("cache.redis_url", defaults.Cache.RedisURL)
+	v.SetDefault("cache.ttl", defaults.Cache.TTL)
 
 	v.AddConfigPath(".")
 	v.AddConfigPath(path)
