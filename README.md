@@ -345,48 +345,6 @@ go build -o refinery cmd/main.go
 go build -ldflags="-s -w" -o refinery cmd/main.go
 ```
 
-### Project Structure
-
-```
-coderefinery/
-├── cmd/
-│   └── main.go                    # Application entry point
-├── graph/
-│   ├── schema.graphqls            # GraphQL schema
-│   ├── resolver.go                # GraphQL resolvers
-│   └── model/                     # Generated GraphQL models
-├── internal/
-│   ├── adapters/
-│   │   ├── indexer/
-│   │   │   ├── indexer.go         # File indexing logic
-│   │   │   ├── db.go              # Database operations
-│   │   │   └── parser/
-│   │   │       ├── parser.go      # Parser interface
-│   │   │       ├── go.go          # Go AST parser
-│   │   │       ├── universal.go   # Universal parser
-│   │   │       └── generic.go     # Fallback parser
-│   │   ├── repository/postgres/   # Repository storage
-│   │   └── storage/postgres/      # User storage
-│   ├── core/
-│   │   ├── domain/                # Domain models
-│   │   ├── ports/                 # Interface definitions
-│   │   └── services/              # Business logic
-│   ├── infrastructure/
-│   │   ├── auth/                  # JWT authentication
-│   │   ├── cache/                 # Hybrid caching
-│   │   ├── llm/                   # Ollama integration
-│   │   ├── logging/               # Zerolog configuration
-│   │   ├── metrics/               # Prometheus metrics
-│   │   ├── middleware/            # HTTP middleware
-│   │   ├── resilience/            # Circuit breaker
-│   │   └── tracing/               # OpenTelemetry
-│   ├── search/                    # Search service
-│   └── config/                    # Configuration management
-├── migrations/                    # Database migrations
-├── config.yaml                    # Application configuration
-└── go.mod
-```
-
 ## Configuration
 
 ### config.yaml Structure
