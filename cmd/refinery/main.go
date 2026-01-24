@@ -1,11 +1,12 @@
 package main
 
 import (
-	"coderefinery/graph"
-	"coderefinery/internal/adapters/indexer"
 	"context"
 
-	repoPG "coderefinery/internal/adapters/repository/postgres"
+	"coderefinery/graph"
+	"coderefinery/internal/adapters/indexer"
+	"coderefinery/internal/adapters/vectordb"
+
 	storagePG "coderefinery/internal/adapters/storage/postgres"
 
 	"coderefinery/internal/config"
@@ -25,7 +26,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"github.com/rs/zerolog/log"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -35,14 +35,13 @@ func main() {
 	// 1. Config laden
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
-		// Hier nutzen wir noch panic oder println, da Logger noch nicht konfiguriert
 		panic("Critical: Config validation failed: " + err.Error())
 	}
 
 	cacheService, err := cache.NewHybridCache(cfg.Cache)
-    if err != nil {
-         log.Warn().Err(err).Msg("Failed to init cache, continuing without caching")
-    }
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to init cache, continuing without caching")
+	}
 
 	// 2. Logger initialisieren
 	logging.Init(cfg.Observability.Logging)
@@ -50,60 +49,67 @@ func main() {
 	log.Info().Msgf("Starting CodeRefinery in %s mode", cfg.Environment)
 
 	var metricService *metrics.Metrics
-		if cfg.Observability.Metrics.Enabled {
-			metricService = metrics.NewMetrics("coderefinery")
-		}
-
-		shutdownTracer, err := tracing.InitTracer(cfg.Observability.Tracing)
-    if err != nil {
-        log.Fatal().Err(err).Msg("Failed to init tracer")
-    }
-    defer func() {
-        if err := shutdownTracer(context.Background()); err != nil {
-            log.Error().Err(err).Msg("Error shutting down tracer")
-        }
-    }()
-    log.Info().Bool("enabled", cfg.Observability.Tracing.Enabled).Msg("Tracing initialized")
-
-	// 3. Datenbank öffnen
-	log.Info().Str("driver", cfg.Database.Driver).Str("source", cfg.Database.Source).Msg("Connecting to database")
-	db, err := sqlx.Connect("pgx", cfg.Database.Source)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to open db")
+	if cfg.Observability.Metrics.Enabled {
+		metricService = metrics.NewMetrics("coderefinery")
 	}
 
+	shutdownTracer, err := tracing.InitTracer(cfg.Observability.Tracing)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to init tracer")
+	}
+	defer func() {
+		if err := shutdownTracer(context.Background()); err != nil {
+			log.Error().Err(err).Msg("Error shutting down tracer")
+		}
+	}()
+
+	// 3. Relationale Datenbank (Postgres) für Metadaten & Auth
+	log.Info().Str("source", cfg.Database.Source).Msg("Connecting to metadata database (Postgres)")
+	db, err := sqlx.Connect("pgx", cfg.Database.Source)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to open metadata db")
+	}
 	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
-
 	defer db.Close()
 
-	// 4. Adapter initialisieren
-	repoStore := storagePG.NewRepoStore(db)
-	chunkRepo := repoPG.NewChunkRepository(db)
+	// 4. Vector Datenbank (Weaviate) für Code & Suche
+	log.Info().Str("host", cfg.VectorDB.Host).Msg("Connecting to vector database (Weaviate)")
+	vectorStore, err := vectordb.NewWeaviateVectorStore(cfg.VectorDB)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to init vector store")
+	}
 
-	// Embedder initialisieren
+	// 5. Adapter & Services initialisieren
+
+	// Stores (SQL)
+	repoStore := storagePG.NewRepoStore(db)
+	userStore := storagePG.NewUserStore(db)
+
+	// Embedder (Ollama)
 	embedder, err := llm.NewOllamaEmbedder(cfg.LLM)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create embedder")
 	}
 
-	// Indexer
-	idx, err := indexer.NewIndexer(cfg.Indexer, embedder, db)
+	// Indexer (nutzt jetzt VectorStore statt SQL DB)
+	idx, err := indexer.NewIndexer(cfg.Indexer, embedder, vectorStore)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to init indexer")
 	}
 
-	// 5. Service Layer
+	// Core Services
 	repoService := services.NewRepositoryService(repoStore, idx)
-	searcher := search.NewSearcher(chunkRepo, embedder, cacheService)
 
-	userStore := storagePG.NewUserStore(db)
+	// Searcher (nutzt jetzt VectorStore)
+	searcher := search.NewSearcher(vectorStore, embedder, cacheService)
+
+	// Auth
 	jwtService := auth.NewJWTService(cfg.Auth.JWTSecret, cfg.Auth.JWTExpiry)
 	authService := services.NewAuthService(userStore, jwtService)
 
 	// 6. GraphQL Server Setup
-	// Gin Mode setzen (Release Mode unterdrückt Debug-Output von Gin selbst)
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -112,10 +118,7 @@ func main() {
 
 	if metricService != nil {
 		r.Use(metricService.GinMiddleware())
-
-		// Endpoint für Prometheus Scraper bereitstellen
 		r.GET(cfg.Observability.Metrics.Path, gin.WrapH(promhttp.Handler()))
-		log.Info().Str("path", cfg.Observability.Metrics.Path).Msg("Metrics endpoint enabled")
 	}
 
 	r.Static("/static", "./web/static")
@@ -140,11 +143,10 @@ func main() {
 	})
 
 	r.GET("/health", func(c *gin.Context) {
-		// Wir könnten hier auch kurz DB und Redis pingen,
-		// aber für Liveness Probes reicht oft ein einfaches 200 OK.
 		c.JSON(200, gin.H{
 			"status": "up",
 			"env":    cfg.Environment,
+			"mode":   "hybrid (postgres + weaviate)",
 		})
 	})
 

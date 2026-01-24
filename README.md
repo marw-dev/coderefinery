@@ -1,6 +1,6 @@
 # CodeRefinery - Intelligent Code Search Engine
 
-High-performance semantic code search system with GraphQL API, hybrid caching, and multi-language support optimized for modern development workflows.
+High-performance semantic code search system with autonomous coding agent, GraphQL API, hybrid caching, and multi-language support optimized for modern development workflows.
 
 ## System Architecture
 
@@ -22,10 +22,14 @@ graph TB
         GQL --> RepoSvc[Repository Service]
         GQL --> SearchSvc[Search Service]
         GQL --> AuthSvc[Auth Service]
+        GQL --> AgentSvc[Agent Service]
         
         RepoSvc --> Indexer
         SearchSvc --> ChunkRepo[Chunk Repository]
         SearchSvc --> Cache
+        
+        AgentSvc --> SearchSvc
+        AgentSvc --> Analyzer[Complexity Analyzer]
     end
     
     subgraph "Indexing Pipeline"
@@ -48,12 +52,14 @@ graph TB
     
     subgraph "External Services"
         Embedder --> Ollama[Ollama API]
+        AgentSvc --> Ollama
     end
     
     UI --> Router
     
     style UI fill:#e1f5ff
     style GQL fill:#fff4e6
+    style AgentSvc fill:#fff0f0
     style VectorDB fill:#f3e5f5
     style Ollama fill:#e8f5e9
 ```
@@ -257,7 +263,26 @@ LIMIT $3
 **Result Ranking:**
 Results are sorted by cosine similarity (descending), with scores normalized to 0-1 range.
 
-### 5. Circuit Breaker Pattern
+### 5. AI Agent Pipeline
+An intelligent multi-stage engine that converts natural language requests into code changes.
+
+|Complexity|Mode|Pipeline Stages|Typical Use Case|
+|----------|----|---------------|----------------|
+Simple|FastPath|Retrieval -> Coding|"Fix typo in comment"|
+Medium|Hybrid|Retrieval -> Planning -> Coding|"Add logging to auth"|
+Complex|Full|Retrieval -> Planning -> Coding -> Validation|"Refactor interface"|
+
+**Pipeline Stages:**
+
+1. **Retrieval:** Fetches relevant context using semantic search.
+
+2. **Planning:** "Senior Architect" model creates a step-by-step implementation plan.
+
+3. **Coding:** "Developer" model implements the plan strictly adhering to syntax.
+
+4. **Validation:** "Reviewer" model checks the code against the original request.
+
+### 6. Circuit Breaker Pattern
 
 Protects against cascade failures when external services (Ollama) are unavailable:
 
@@ -525,6 +550,22 @@ query {
     content
     score
     signature
+  }
+}
+```
+
+**Execute Agent Task:**
+```graphhql
+mutation {
+  executeTask(
+    query: "Refactor the User struct to include a JSON tag for the Email field",
+    projectID: "123-abc"
+  ) {
+    executionID
+    status
+    plan
+    generatedCode
+    complexity
   }
 }
 ```

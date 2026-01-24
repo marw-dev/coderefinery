@@ -40,7 +40,7 @@ func NewOllamaEmbedder(cfg config.LLMConfig) (*OllamaEmbedder, error) {
 		client: llm,
 		host:   cfg.Host,
 		model:  cfg.EmbeddingModel,
-		cb: resilience.NewCircuitBreaker("ollama-embedder"),
+		cb: resilience.NewProductionCircuitBreaker("ollama-embedder"),
 	}, nil
 }
 

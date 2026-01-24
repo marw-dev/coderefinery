@@ -15,35 +15,42 @@ import (
 	"coderefinery/internal/core/ports"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
 type Indexer struct {
 	cfg            config.IndexerConfig
 	embedder       ports.Embedder
-	db             *DB
+	vectorStore    ports.VectorStore
 	mu             sync.RWMutex
 	ignorePatterns []string
 }
 
-// NewIndexer akzeptiert ports.Embedder
-func NewIndexer(cfg config.IndexerConfig, embedder ports.Embedder, dbConn *sqlx.DB) (*Indexer, error) {
-	db := NewDB(dbConn)
+// NewIndexer akzeptiert jetzt ports.VectorStore
+func NewIndexer(cfg config.IndexerConfig, embedder ports.Embedder, vectorStore ports.VectorStore) (*Indexer, error) {
 	return &Indexer{
-		cfg:      cfg,
-		embedder: embedder,
-		db:       db,
+		cfg:         cfg,
+		embedder:    embedder,
+		vectorStore: vectorStore,
 	}, nil
 }
 
 func (idx *Indexer) Index(ctx context.Context, repo *domain.Repository) error {
 	log.Printf("Indexing repository: %s", repo.Name)
+	// Wir nutzen repo.ID, um die Chunks zuzuordnen
 	return idx.buildIndexInternal(ctx, repo.ID, repo.Path)
 }
 
 func (idx *Indexer) DeleteIndex(ctx context.Context, repo *domain.Repository) error {
 	log.Printf("Deleting index for repository: %s", repo.Name)
-	return idx.db.DeleteProjectFiles(repo.ID)
+	return idx.vectorStore.DeleteByRepoID(ctx, repo.ID)
+}
+
+func (idx *Indexer) DeleteAllIndices(ctx context.Context) error {
+	log.Println("WARNING: Deleting ALL search indices (not implemented via vectorStore, doing nothing safely or use specific cleanup logic)")
+	// In einer reinen VectorStore Umgebung ohne "DeleteAll" Methode im Interface
+	// müssten wir hier iterieren oder das Interface erweitern.
+	// Für jetzt lassen wir es sicherheitshalber leer oder loggen eine Warnung.
+	return nil
 }
 
 // --- Interne Logik ---
@@ -84,7 +91,7 @@ func (idx *Indexer) shouldIgnore(path string) bool {
 	return false
 }
 
-func (idx *Indexer) buildIndexInternal(ctx context.Context, projectID uuid.UUID, rootPath string) error {
+func (idx *Indexer) buildIndexInternal(ctx context.Context, repoID uuid.UUID, rootPath string) error {
 	idx.loadGitIgnore(rootPath)
 
 	filesToProcess := make([]string, 0)
@@ -100,10 +107,10 @@ func (idx *Indexer) buildIndexInternal(ctx context.Context, projectID uuid.UUID,
 			return nil
 		}
 
-		lastModDB, exists := idx.db.GetFileModTime(projectID, path)
-		if !exists || info.ModTime().After(lastModDB) {
-			filesToProcess = append(filesToProcess, path)
-		}
+		// Früher: Check gegen DB LastModified (idx.db.GetFileModTime).
+		// Jetzt: Wir indexieren vorerst immer alles (Full Sync),
+		// da wir den State in Weaviate noch nicht effizient abfragen.
+		filesToProcess = append(filesToProcess, path)
 		return nil
 	})
 	if err != nil {
@@ -111,13 +118,13 @@ func (idx *Indexer) buildIndexInternal(ctx context.Context, projectID uuid.UUID,
 	}
 
 	if len(filesToProcess) == 0 {
-		log.Println("Index is up to date.")
+		log.Println("No matching files found to index.")
 		return nil
 	}
 
-	log.Printf("Processing %d changed/new files...", len(filesToProcess))
+	log.Printf("Processing %d files...", len(filesToProcess))
 	for _, path := range filesToProcess {
-		if err := idx.processFile(ctx, projectID, path); err != nil {
+		if err := idx.processFile(ctx, repoID, path); err != nil {
 			log.Printf("Error processing %s: %v", filepath.Base(path), err)
 		}
 	}
@@ -125,7 +132,7 @@ func (idx *Indexer) buildIndexInternal(ctx context.Context, projectID uuid.UUID,
 	return nil
 }
 
-func (idx *Indexer) processFile(ctx context.Context, projectID uuid.UUID, path string) error {
+func (idx *Indexer) processFile(ctx context.Context, repoID uuid.UUID, path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -156,27 +163,24 @@ func (idx *Indexer) processFile(ctx context.Context, projectID uuid.UUID, path s
 
 	texts := make([]string, len(chunks))
 	for i, c := range chunks {
+		// Wir kombinieren Signatur und Content für das Embedding
 		text := c.Signature + "\n" + c.Comments + "\n" + c.Content
 		texts[i] = text
 	}
 
+	// Embeddings via Ollama generieren
 	embeddings, err := idx.embedder.EmbedBatch(ctx, texts)
 	if err != nil {
 		return err
 	}
 
+	// Chunks mit Daten anreichern
 	for i := range chunks {
 		chunks[i].Embedding = embeddings[i]
+		chunks[i].RepoID = repoID // WICHTIG: Link zum Repo setzen!
+		chunks[i].Language = lang
 	}
 
-	return idx.db.SaveFileChunks(projectID, path, info.ModTime(), chunks)
-}
-
-func (idx *Indexer) GetEmbedder() ports.Embedder {
-	return idx.embedder
-}
-
-func (idx *Indexer) DeleteAllIndices(ctx context.Context) error {
-	log.Printf("WARNING: Deleting ALL search indices/vectors...")
-	return idx.db.DeleteAllFileChunks()
+	// Speichern in Weaviate (Batch Upsert)
+	return idx.vectorStore.BatchUpsert(ctx, chunks)
 }

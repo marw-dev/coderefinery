@@ -13,6 +13,13 @@ database:
   max_idle_conns: 10
   conn_max_lifetime: 5m
 
+vectordb:
+  host: "localhost:8090" # Für lokale Entwicklung (Docker Port Mapping)
+  scheme: "http"
+  api_key: "" # Leer lassen für Dev/Anonymous access
+  index_name: "CodeChunk" # Wie wir unsere Klasse in Weaviate nennen
+  timeout: 10s
+
 llm:
   service: "ollama"
   host: "http://localhost:11434"

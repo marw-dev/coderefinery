@@ -1,24 +1,25 @@
 package ports
 
 import (
-	"coderefinery/internal/core/domain"
 	"context"
 	"time"
+
+	"coderefinery/internal/core/domain"
 
 	"github.com/google/uuid"
 )
 
-// RepositoryService (Business Logic Primary Port)
+// RepositoryService ist der "Driver Port" (Eingang)
 type RepositoryService interface {
 	Create(ctx context.Context, name, path string) (*domain.Repository, error)
 	Get(ctx context.Context, id uuid.UUID) (*domain.Repository, error)
 	List(ctx context.Context) ([]*domain.Repository, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	Reindex(ctx context.Context, id uuid.UUID) error
-    DeleteAllIndices(ctx context.Context) error
+	DeleteAllIndices(ctx context.Context) error
 }
 
-// RepositoryStore (Secondary Port)
+// RepositoryStore verwaltet Repo-Metadaten in SQL
 type RepositoryStore interface {
 	Save(ctx context.Context, repo *domain.Repository) error
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.Repository, error)
@@ -26,50 +27,40 @@ type RepositoryStore interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
-// Indexer (Secondary Port)
-type Indexer interface {
-	Index(ctx context.Context, repo *domain.Repository) error
-	DeleteIndex(ctx context.Context, repo *domain.Repository) error
-    DeleteAllIndices(ctx context.Context) error
-}
-
-// AuthService
-type AuthService interface {
-	Login(ctx context.Context, username, password string) (string, *domain.User, error)
-	Register(ctx context.Context, username, password string) (*domain.User, error)
-	Me(ctx context.Context, userID uuid.UUID) (*domain.User, error)
-}
-
+// NEU: UserStore für Authentifizierung (SQL)
 type UserStore interface {
 	Save(ctx context.Context, user *domain.User) error
 	FindByUsername(ctx context.Context, username string) (*domain.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 }
 
-// ChunkRepository
-type ChunkSearchResult struct {
-	domain.CodeChunk
-	Similarity float64 `db:"cosine_similarity"`
-	File       string  `db:"file_path"`
-	Language   string  `db:"file_language"`
+type Cache interface {
+	Get(ctx context.Context, key string, dest any) (bool, error)
+	Set(ctx context.Context, key string, value any, ttl time.Duration) error
 }
 
-type ChunkRepository interface {
-	VectorSearch(ctx context.Context, embedding []float32, limit int, threshold float64) ([]*ChunkSearchResult, error)
+// VectorStore ist die Schnittstelle zu Weaviate
+type VectorStore interface {
+	BatchUpsert(ctx context.Context, chunks []domain.CodeChunk) error
+	SearchSimilar(ctx context.Context, queryVector []float32, limit int, minScore float64, repoIDs []uuid.UUID) ([]domain.SearchResult, error)
+	DeleteByRepoID(ctx context.Context, repoID uuid.UUID) error
 }
 
-// Embedder Interface (Secondary Port)
+// Indexer Interface
+type Indexer interface {
+	Index(ctx context.Context, repo *domain.Repository) error
+	DeleteIndex(ctx context.Context, repo *domain.Repository) error
+	DeleteAllIndices(ctx context.Context) error
+}
+
+// Embedder Interface
 type Embedder interface {
 	Embed(ctx context.Context, text string) ([]float32, error)
 	EmbedBatch(ctx context.Context, texts []string) ([][]float32, error)
 	Dimensions() (int, error)
-    SetModel(newModel string) error
-    ListModels(ctx context.Context) ([]string, error)
-    GetCurrentModel() string
-}
 
-// Cache Interface (Secondary Port)
-type Cache interface {
-    Get(ctx context.Context, key string, dest any) (bool, error)
-    Set(ctx context.Context, key string, value any, ttl time.Duration) error
+	// LLM Management
+	ListModels(ctx context.Context) ([]string, error)
+	GetCurrentModel() string
+	SetModel(model string) error
 }
