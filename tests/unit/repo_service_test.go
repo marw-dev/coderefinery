@@ -44,7 +44,8 @@ func TestRepoService_Create_Success(t *testing.T) {
 	mockIndexer.On("Index", mock.Anything, mock.Anything).Return(nil).Maybe()
 
 	// Execute
-	repo, err := service.Create(ctx, "test-repo", realTmpDir)
+	// KORREKTUR: 4. Argument 'isManaged' hinzugefügt (false für lokale Tests)
+	repo, err := service.Create(ctx, "test-repo", realTmpDir, false)
 
 	require.NoError(t, err)
 	require.NotNil(t, repo)

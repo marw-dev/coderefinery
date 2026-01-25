@@ -11,7 +11,7 @@ import (
 
 // RepositoryService ist der "Driver Port" (Eingang)
 type RepositoryService interface {
-	Create(ctx context.Context, name, path string) (*domain.Repository, error)
+	Create(ctx context.Context, name, path string, isManaged bool) (*domain.Repository, error)
 	Get(ctx context.Context, id uuid.UUID) (*domain.Repository, error)
 	List(ctx context.Context) ([]*domain.Repository, error)
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -27,7 +27,7 @@ type RepositoryStore interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
-// NEU: UserStore für Authentifizierung (SQL)
+// UserStore für Authentifizierung (SQL)
 type UserStore interface {
 	Save(ctx context.Context, user *domain.User) error
 	FindByUsername(ctx context.Context, username string) (*domain.User, error)

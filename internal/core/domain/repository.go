@@ -29,15 +29,18 @@ type Repository struct {
 	FileCount   int              `json:"file_count"`
 	ChunkCount  int              `json:"chunk_count"`
 	ErrorMsg    string           `json:"error_msg,omitempty"`
+
+	IsManaged 	bool 			 `json:"is_managed"` // true wenn via upload erstellt
 }
 
 // NewRepository erstellt eine neue Instanz mit Defaults
-func NewRepository(name, path string) *Repository {
+func NewRepository(name, path string, isManaged bool) *Repository {
 	now := time.Now()
 	return &Repository{
 		ID:        uuid.New(),
 		Name:      name,
 		Path:      path,
+		IsManaged: isManaged,
 		Status:    StatusPending,
 		CreatedAt: now,
 		UpdatedAt: now,

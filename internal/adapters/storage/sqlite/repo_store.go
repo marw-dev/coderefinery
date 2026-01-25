@@ -40,8 +40,8 @@ func (s *RepoStore) InitSchema() error {
 
 func (s *RepoStore) Save(ctx context.Context, repo *domain.Repository) error {
 	query := `
-	INSERT INTO repositories (id, name, path, status, last_indexed, created_at, updated_at, file_count, chunk_count, error_msg)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO repositories (id, name, path, status, last_indexed, created_at, updated_at, file_count, chunk_count, error_msg, is_managed)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		status = excluded.status,
 		last_indexed = excluded.last_indexed,
@@ -49,6 +49,7 @@ func (s *RepoStore) Save(ctx context.Context, repo *domain.Repository) error {
 		file_count = excluded.file_count,
 		chunk_count = excluded.chunk_count,
 		error_msg = excluded.error_msg;
+		is_managed = excluded.is_managed;
 	`
 
 	_, err := s.db.ExecContext(ctx, query,

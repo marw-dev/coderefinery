@@ -27,7 +27,7 @@ func NewRepositoryService(store ports.RepositoryStore, indexer ports.Indexer) *R
 }
 
 // Create validiert den Pfad, erstellt den DB-Eintrag und startet das Indexing
-func (s *RepositoryService) Create(ctx context.Context, name, path string) (*domain.Repository, error) {
+func (s *RepositoryService) Create(ctx context.Context, name, path string, isManaged bool) (*domain.Repository, error) {
 	// 1. Validierung
 	if name == "" {
 		return nil, errors.New(errors.ErrCodeValidation, "repository name is required")
@@ -42,7 +42,7 @@ func (s *RepositoryService) Create(ctx context.Context, name, path string) (*dom
 	}
 
 	// 2. Entity erstellen
-	repo := domain.NewRepository(name, path)
+	repo := domain.NewRepository(name, path, isManaged)
 
 	// 3. Speichern
 	if err := s.store.Save(ctx, repo); err != nil {
@@ -79,6 +79,15 @@ func (s *RepositoryService) Delete(ctx context.Context, id uuid.UUID) error {
 		// Wir loggen nur, brechen aber nicht ab, damit der DB-Eintrag trotzdem gelöscht werden kann
 		fmt.Printf("Warning: Failed to delete index for repo %s: %v\n", id, err)
 	}
+
+	if repo.IsManaged {
+        // Sicherheitscheck: Nicht / oder sensible Pfade löschen
+        if repo.Path != "" && repo.Path != "/" {
+            if err := os.RemoveAll(repo.Path); err != nil {
+                 fmt.Printf("Warning: Failed to delete files for repo %s: %v\n", id, err)
+            }
+        }
+    }
 
 	// Dann aus DB entfernen
 	return s.store.Delete(ctx, id)

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS repositories (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     repository_url VARCHAR(512) NOT NULL,
+    is_managed BOOLEAN DEFAULT FALSE
     owner_id UUID NOT NULL,
     settings JSONB NOT NULL DEFAULT '{}',
     status VARCHAR(50) NOT NULL DEFAULT 'pending',

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>CodeRefinery Enterprise</title>
+        <title>CodeRefinery Enterprise v2.2</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <script
             defer
@@ -27,238 +27,273 @@
                 display: none !important;
             }
 
-            /* Custom Scrollbar */
+            /* Modern Scrollbar */
             ::-webkit-scrollbar {
-                width: 8px;
-                height: 8px;
+                width: 6px;
+                height: 6px;
             }
             ::-webkit-scrollbar-thumb {
-                background: #374151;
-                border-radius: 4px;
+                background: #4b5563;
+                border-radius: 3px;
             }
             ::-webkit-scrollbar-track {
-                background: #1f2937;
+                background: #111827;
             }
 
             .glass {
-                background: rgba(31, 41, 55, 0.7);
-                backdrop-filter: blur(10px);
+                background: rgba(17, 24, 39, 0.8);
+                backdrop-filter: blur(12px);
+            }
+
+            /* Animations */
+            .fade-enter-active,
+            .fade-leave-active {
+                transition: opacity 0.3s ease;
+            }
+            .fade-enter-from,
+            .fade-leave-to {
+                opacity: 0;
+            }
+
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            .msg-animate {
+                animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
         </style>
     </head>
     <body
-        class="bg-gray-950 text-gray-100 h-screen flex flex-col overflow-hidden"
+        class="bg-gray-950 text-gray-100 h-screen flex flex-col overflow-hidden selection:bg-blue-500/30"
         x-data="app()"
     >
         <div
             x-show="!isLoggedIn"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/90 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950"
             x-transition.opacity
             x-cloak
         >
             <div
-                class="w-full max-w-md p-8 bg-gray-900 rounded-2xl shadow-2xl border border-gray-800"
+                class="w-full max-w-md p-8 bg-gray-900 rounded-2xl shadow-2xl border border-gray-800 relative overflow-hidden"
             >
+                <div
+                    class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500"
+                ></div>
+
                 <div class="flex flex-col items-center mb-8">
                     <div
-                        class="p-4 bg-blue-600/10 rounded-2xl mb-4 ring-1 ring-blue-500/20"
+                        class="p-4 bg-gray-800 rounded-2xl mb-4 ring-1 ring-gray-700 shadow-lg"
                     >
                         <i
                             data-lucide="layers"
-                            class="w-12 h-12 text-blue-500"
+                            class="w-10 h-10 text-blue-400"
                         ></i>
                     </div>
-                    <h1
-                        class="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent"
-                    >
+                    <h1 class="text-3xl font-bold tracking-tight text-white">
                         CodeRefinery
                     </h1>
                     <p class="text-gray-500 text-sm mt-2">
-                        AI-Powered Engineering Platform
+                        Enterprise Engineering Intelligence
                     </p>
                 </div>
 
-                <div x-show="authView === 'login'" class="space-y-5">
+                <form
+                    @submit.prevent="authView === 'login' ? login() : register()"
+                    class="space-y-5"
+                >
                     <div class="space-y-4">
-                        <input
-                            type="text"
-                            x-model="authForm.username"
-                            @keydown.enter="login()"
-                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-                            placeholder="Username"
-                        />
-                        <input
-                            type="password"
-                            x-model="authForm.password"
-                            @keydown.enter="login()"
-                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-                            placeholder="Password"
-                        />
+                        <div class="relative">
+                            <i
+                                data-lucide="user"
+                                class="absolute left-4 top-3.5 w-5 h-5 text-gray-500"
+                            ></i>
+                            <input
+                                type="text"
+                                x-model="authForm.username"
+                                required
+                                class="w-full bg-gray-950 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                                placeholder="Username"
+                            />
+                        </div>
+                        <div class="relative">
+                            <i
+                                data-lucide="lock"
+                                class="absolute left-4 top-3.5 w-5 h-5 text-gray-500"
+                            ></i>
+                            <input
+                                type="password"
+                                x-model="authForm.password"
+                                required
+                                class="w-full bg-gray-950 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                                placeholder="Password"
+                            />
+                        </div>
                     </div>
+
                     <button
-                        @click="login()"
-                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2"
+                        type="submit"
+                        class="w-full font-semibold py-3.5 rounded-xl transition shadow-lg flex justify-center items-center gap-2"
+                        :class="authView === 'login' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'"
                         :disabled="isLoading"
                     >
-                        <span x-show="!isLoading">Sign In</span>
                         <i
                             x-show="isLoading"
                             data-lucide="loader-2"
                             class="w-5 h-5 animate-spin"
                         ></i>
+                        <span
+                            x-text="authView === 'login' ? 'Sign In' : 'Create Account'"
+                        ></span>
                     </button>
-                    <p class="text-center text-sm text-gray-500">
-                        No account?
-                        <a
-                            href="#"
-                            @click.prevent="authView = 'register'"
-                            class="text-blue-400 hover:text-blue-300 transition"
-                            >Create one</a
-                        >
-                    </p>
-                </div>
+                </form>
 
-                <div x-show="authView === 'register'" class="space-y-5" x-cloak>
-                    <div class="space-y-4">
-                        <input
-                            type="text"
-                            x-model="authForm.username"
-                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-                            placeholder="Choose Username"
-                        />
-                        <input
-                            type="password"
-                            x-model="authForm.password"
-                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-                            placeholder="Choose Password"
-                        />
-                    </div>
+                <div class="mt-6 text-center">
                     <button
-                        @click="register()"
-                        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-emerald-900/20 flex justify-center items-center gap-2"
-                        :disabled="isLoading"
+                        @click="authView = authView === 'login' ? 'register' : 'login'"
+                        class="text-sm text-gray-500 hover:text-white transition"
                     >
-                        <span x-show="!isLoading">Create Account</span>
-                        <i
-                            x-show="isLoading"
-                            data-lucide="loader-2"
-                            class="w-5 h-5 animate-spin"
-                        ></i>
+                        <span
+                            x-text="authView === 'login' ? 'No account? Create one' : 'Back to Login'"
+                        ></span>
                     </button>
-                    <p class="text-center text-sm text-gray-500">
-                        Have an account?
-                        <a
-                            href="#"
-                            @click.prevent="authView = 'login'"
-                            class="text-blue-400 hover:text-blue-300 transition"
-                            >Sign In</a
-                        >
-                    </p>
                 </div>
             </div>
         </div>
 
         <div x-show="isLoggedIn" class="flex flex-1 overflow-hidden" x-cloak>
             <div
-                class="w-72 bg-gray-900 border-r border-gray-800 flex flex-col z-20"
+                class="w-72 bg-gray-900 border-r border-gray-800 flex flex-col z-20 shadow-xl"
             >
-                <div class="p-5 border-b border-gray-800">
+                <div class="p-5 border-b border-gray-800 bg-gray-900/50">
                     <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-500/10 rounded-lg">
+                        <div
+                            class="p-1.5 bg-blue-500/10 rounded border border-blue-500/20"
+                        >
                             <i
                                 data-lucide="layers"
-                                class="w-5 h-5 text-blue-500"
+                                class="w-5 h-5 text-blue-400"
                             ></i>
                         </div>
                         <div>
-                            <h1 class="font-bold text-gray-100 tracking-tight">
+                            <h1
+                                class="font-bold text-gray-100 tracking-tight leading-none"
+                            >
                                 Refinery
                             </h1>
-                            <p class="text-xs text-gray-500">v2.0 Enterprise</p>
+                            <span
+                                class="text-[10px] uppercase font-bold text-blue-500 tracking-wider"
+                                >Enterprise</span
+                            >
                         </div>
                     </div>
                 </div>
 
-                <div class="p-4 space-y-4 flex-1 overflow-y-auto">
-                    <div>
-                        <div
-                            class="flex items-center justify-between mb-3 px-1"
+                <div class="p-3 flex-1 overflow-y-auto custom-scrollbar">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <span
+                            class="text-xs font-bold text-gray-500 uppercase tracking-wider"
+                            >Projects</span
                         >
-                            <span
-                                class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
-                                >Repositories</span
-                            >
-                            <button
-                                @click="showAddModal = true"
-                                class="text-gray-400 hover:text-white transition"
-                            >
-                                <i data-lucide="plus" class="w-4 h-4"></i>
-                            </button>
-                        </div>
+                        <button
+                            @click="showAddModal = true"
+                            class="p-1 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition"
+                            title="Import Repository"
+                        >
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
 
-                        <div class="space-y-1">
-                            <template
-                                x-for="repo in repositories"
-                                :key="repo.id"
+                    <div class="space-y-1">
+                        <template x-for="repo in repositories" :key="repo.id">
+                            <div
+                                @click="selectRepo(repo.id)"
+                                class="group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition relative border border-transparent"
+                                :class="activeRepo === repo.id ? 'bg-gray-800 border-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800/50'"
                             >
                                 <div
-                                    @click="selectRepo(repo.id)"
-                                    class="group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition relative overflow-hidden"
-                                    :class="activeRepo === repo.id ? 'bg-blue-600/10 text-blue-400 ring-1 ring-blue-500/20' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'"
-                                >
-                                    <div
-                                        class="w-2 h-2 rounded-full shrink-0"
-                                        :class="{
-                                            'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]': repo.status === 'ready',
-                                            'bg-amber-500 animate-pulse': repo.status === 'indexing',
-                                            'bg-red-500': repo.status === 'error'
-                                         }"
-                                    ></div>
+                                    class="mt-1.5 w-2 h-2 rounded-full shrink-0"
+                                    :class="{
+                                        'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]': repo.status === 'ready',
+                                        'bg-amber-500 animate-pulse': repo.status === 'indexing',
+                                        'bg-red-500': repo.status === 'error'
+                                     }"
+                                    :title="repo.status === 'error' ? repo.errorMsg : repo.status"
+                                ></div>
 
-                                    <div class="flex-1 truncate">
+                                <div class="flex-1 min-w-0">
+                                    <div
+                                        class="flex justify-between items-center"
+                                    >
                                         <div
                                             class="text-sm font-medium truncate"
                                             x-text="repo.name"
                                         ></div>
-                                        <div
-                                            class="text-xs opacity-60 truncate"
-                                            x-text="repo.fileCount + ' files'"
-                                        ></div>
+                                        <i
+                                            x-show="repo.status === 'error'"
+                                            data-lucide="alert-circle"
+                                            class="w-3 h-3 text-red-400"
+                                        ></i>
                                     </div>
 
                                     <div
-                                        class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-gray-800 rounded-md shadow-sm"
+                                        class="flex items-center gap-2 mt-0.5 text-[10px] opacity-60 font-mono"
                                     >
-                                        <button
-                                            @click.stop="reindexRepo(repo.id)"
-                                            class="p-1.5 hover:text-blue-400"
-                                            title="Reindex"
-                                        >
-                                            <i
-                                                data-lucide="refresh-cw"
-                                                class="w-3.5 h-3.5"
-                                            ></i>
-                                        </button>
-                                        <button
-                                            @click.stop="deleteRepo(repo.id)"
-                                            class="p-1.5 hover:text-red-400"
-                                            title="Delete"
-                                        >
-                                            <i
-                                                data-lucide="trash-2"
-                                                class="w-3.5 h-3.5"
-                                            ></i>
-                                        </button>
+                                        <span
+                                            x-text="repo.fileCount + ' files'"
+                                        ></span>
+                                        <span>•</span>
+                                        <span
+                                            x-text="formatSize(repo.chunkCount)"
+                                        ></span>
                                     </div>
+                                    <div
+                                        x-show="repo.lastIndexed"
+                                        class="text-[10px] text-gray-600 mt-1 truncate"
+                                        x-text="'Updated: ' + formatDate(repo.lastIndexed)"
+                                    ></div>
                                 </div>
-                            </template>
 
-                            <div
-                                x-show="repositories.length === 0"
-                                class="text-center py-8 text-gray-600 border border-dashed border-gray-800 rounded-lg"
-                            >
-                                <span class="text-xs">No repositories</span>
+                                <div
+                                    class="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 rounded border border-gray-700 shadow-sm"
+                                >
+                                    <button
+                                        @click.stop="reindexRepo(repo.id)"
+                                        class="p-1.5 hover:text-blue-400"
+                                        title="Reindex"
+                                    >
+                                        <i
+                                            data-lucide="refresh-cw"
+                                            class="w-3 h-3"
+                                        ></i>
+                                    </button>
+                                    <button
+                                        @click.stop="deleteRepo(repo.id)"
+                                        class="p-1.5 hover:text-red-400"
+                                        title="Delete"
+                                    >
+                                        <i
+                                            data-lucide="trash-2"
+                                            class="w-3 h-3"
+                                        ></i>
+                                    </button>
+                                </div>
                             </div>
+                        </template>
+
+                        <div
+                            x-show="repositories.length === 0 && !isLoading"
+                            class="text-center py-10 border border-dashed border-gray-800 rounded-lg"
+                        >
+                            <p class="text-xs text-gray-500">
+                                No repositories active
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -266,19 +301,19 @@
                 <div class="p-4 bg-gray-900 border-t border-gray-800">
                     <button
                         @click="openSettings()"
-                        class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition group mb-2"
+                        class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition group mb-1"
                     >
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xs shadow-lg"
+                                class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center font-bold text-xs text-white ring-2 ring-gray-800"
                             >
                                 <span
                                     x-text="user?.username.substring(0,2).toUpperCase()"
                                 ></span>
                             </div>
-                            <div class="text-left">
+                            <div class="text-left overflow-hidden">
                                 <div
-                                    class="text-sm font-medium text-gray-200 group-hover:text-white transition"
+                                    class="text-sm font-medium text-gray-200 truncate"
                                     x-text="user?.username"
                                 ></div>
                                 <div
@@ -289,22 +324,21 @@
                         </div>
                         <i
                             data-lucide="settings"
-                            class="w-4 h-4 text-gray-500 group-hover:text-gray-300"
+                            class="w-4 h-4 text-gray-500 group-hover:text-white transition"
                         ></i>
                     </button>
                     <button
                         @click="logout()"
-                        class="w-full py-2 text-xs font-medium text-gray-500 hover:text-red-400 flex items-center justify-center gap-2 transition border border-gray-800 rounded-lg hover:bg-gray-800 hover:border-red-500/20"
+                        class="w-full py-1.5 text-xs text-gray-500 hover:text-red-400 flex items-center justify-center gap-2 transition hover:bg-red-950/30 rounded"
                     >
-                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign
-                        Out
+                        Sign Out
                     </button>
                 </div>
             </div>
 
             <div class="flex-1 flex flex-col min-w-0 bg-gray-950 relative">
                 <div
-                    class="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50 backdrop-blur-md z-10 sticky top-0"
+                    class="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/80 backdrop-blur-md z-10 sticky top-0"
                 >
                     <div
                         class="flex p-1 bg-gray-800 rounded-lg border border-gray-700"
@@ -312,63 +346,55 @@
                         <button
                             @click="setMode('search')"
                             class="px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2"
-                            :class="mode === 'search' ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'"
+                            :class="mode === 'search' ? 'bg-gray-700 text-white shadow-sm ring-1 ring-gray-600' : 'text-gray-400 hover:text-gray-200'"
                         >
                             <i data-lucide="search" class="w-4 h-4"></i> Search
                         </button>
                         <button
                             @click="setMode('agent')"
                             class="px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2"
-                            :class="mode === 'agent' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'"
+                            :class="mode === 'agent' ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-500' : 'text-gray-400 hover:text-gray-200'"
                         >
                             <i data-lucide="bot" class="w-4 h-4"></i> Agent
                         </button>
                     </div>
 
                     <div class="flex items-center gap-3 text-sm">
-                        <span class="text-gray-500">Context:</span>
+                        <span class="text-gray-500">Scope:</span>
                         <div
-                            class="flex items-center gap-2 px-3 py-1.5 bg-gray-900 rounded-full border border-gray-800"
+                            class="flex items-center gap-2 px-3 py-1.5 bg-gray-900 rounded-full border border-gray-800 hover:border-gray-700 transition cursor-default"
                         >
                             <i
                                 data-lucide="database"
-                                class="w-3.5 h-3.5 text-blue-500"
+                                class="w-3.5 h-3.5"
+                                :class="activeRepo ? 'text-emerald-500' : 'text-blue-500'"
                             ></i>
                             <span
-                                x-text="activeRepo ? getActiveRepoName() : 'All Projects'"
+                                x-text="activeRepo ? getActiveRepoName() : 'Global Search'"
                                 class="text-gray-300 font-medium"
                             ></span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto" id="main-scroll">
-                    <div class="max-w-5xl mx-auto px-6 py-10">
-                        <div class="mb-12 relative">
+                <div class="flex-1 overflow-y-auto relative" id="main-scroll">
+                    <div class="max-w-5xl mx-auto px-6 py-10 pb-32">
+                        <div class="mb-10">
                             <div class="relative group">
                                 <div
-                                    class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500"
+                                    class="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl opacity-20 group-hover:opacity-40 blur transition duration-500"
                                 ></div>
                                 <div
-                                    class="relative bg-gray-900 rounded-xl border border-gray-800 shadow-2xl overflow-hidden"
+                                    class="relative bg-gray-900 rounded-xl border border-gray-800 shadow-2xl"
                                 >
                                     <div class="flex items-start p-4 gap-4">
-                                        <div class="mt-1">
+                                        <div class="mt-1 shrink-0">
                                             <div
-                                                x-show="mode === 'search'"
-                                                class="p-2 bg-gray-800 rounded-lg"
+                                                class="p-2 rounded-lg"
+                                                :class="mode === 'search' ? 'bg-gray-800' : 'bg-blue-600'"
                                             >
                                                 <i
-                                                    data-lucide="search"
-                                                    class="w-5 h-5 text-gray-400"
-                                                ></i>
-                                            </div>
-                                            <div
-                                                x-show="mode === 'agent'"
-                                                class="p-2 bg-blue-600 rounded-lg"
-                                            >
-                                                <i
-                                                    data-lucide="sparkles"
+                                                    :data-lucide="mode === 'search' ? 'search' : 'sparkles'"
                                                     class="w-5 h-5 text-white"
                                                 ></i>
                                             </div>
@@ -376,20 +402,27 @@
                                         <textarea
                                             x-model="query"
                                             @keydown.enter.prevent="execute()"
-                                            :placeholder="mode === 'search' ? 'Search for code logic, patterns, or errors...' : 'Describe a task (e.g., \'Refactor Auth to use JWT\')...'"
-                                            class="w-full bg-transparent border-none text-lg text-gray-100 placeholder-gray-600 focus:ring-0 resize-none py-2"
-                                            rows="2"
+                                            :placeholder="mode === 'search' ? 'Search for definitions, error strings, or patterns...' : 'Task: Refactor auth service to use JWT...'"
+                                            class="w-full bg-transparent border-none text-lg text-gray-100 placeholder-gray-600 focus:ring-0 resize-none py-2 min-h-[3rem]"
+                                            rows="1"
+                                            @input="$el.style.height = ''; $el.style.height = $el.scrollHeight + 'px'"
                                         ></textarea>
-                                        <div class="mt-1">
+                                        <div class="mt-1 shrink-0">
                                             <button
                                                 @click="execute()"
-                                                class="p-3 rounded-lg transition-all duration-300"
-                                                :class="query.length > 0 ? 'bg-white text-gray-900 hover:bg-gray-200 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-gray-800 text-gray-500 cursor-not-allowed'"
-                                                :disabled="query.length === 0 || isLoading"
+                                                class="p-3 rounded-lg transition-all duration-300 flex items-center justify-center"
+                                                :class="query.trim().length > 0 ? 'bg-white text-gray-900 hover:bg-gray-200' : 'bg-gray-800 text-gray-500 cursor-not-allowed'"
+                                                :disabled="!query.trim() || isLoading"
                                             >
                                                 <i
+                                                    x-show="!isLoading"
                                                     data-lucide="arrow-right"
                                                     class="w-5 h-5"
+                                                ></i>
+                                                <i
+                                                    x-show="isLoading"
+                                                    data-lucide="loader-2"
+                                                    class="w-5 h-5 animate-spin"
                                                 ></i>
                                             </button>
                                         </div>
@@ -397,126 +430,125 @@
 
                                     <div
                                         x-show="mode === 'agent'"
-                                        x-transition
-                                        class="px-4 py-2 bg-gray-950/50 border-t border-gray-800 flex items-center justify-between text-xs"
+                                        class="px-4 py-2 bg-gray-950/50 border-t border-gray-800 flex items-center justify-between text-xs rounded-b-xl"
                                     >
                                         <div class="flex gap-4 text-gray-400">
                                             <label
-                                                class="flex items-center gap-2 cursor-pointer hover:text-gray-200"
+                                                class="flex items-center gap-2 cursor-pointer hover:text-gray-200 select-none"
                                             >
                                                 <input
                                                     type="checkbox"
                                                     x-model="agentOptions.validation"
                                                     class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0"
                                                 />
-                                                <span>Enable Reviewer</span>
+                                                <span>Auto-Review</span>
                                             </label>
                                             <label
-                                                class="flex items-center gap-2 cursor-pointer hover:text-gray-200"
+                                                class="flex items-center gap-2 cursor-pointer hover:text-gray-200 select-none"
                                             >
                                                 <input
                                                     type="checkbox"
                                                     x-model="agentOptions.autoMode"
                                                     class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0"
                                                 />
-                                                <span>Auto-Complexity</span>
+                                                <span>Smart Mode</span>
                                             </label>
                                         </div>
-                                        <span class="text-blue-500/70 font-mono"
-                                            >Model: GPT-4-Turbo</span
+                                        <div
+                                            class="flex gap-2 items-center text-[10px] text-gray-600 font-mono"
                                         >
+                                            <span
+                                                x-text="llmSettings.planner || 'Default Planner'"
+                                            ></span>
+                                            <span>/</span>
+                                            <span
+                                                x-text="llmSettings.coder || 'Default Coder'"
+                                            ></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div
-                            x-show="isLoading"
-                            class="flex flex-col items-center justify-center py-12"
-                            x-cloak
-                        >
-                            <div class="relative">
-                                <div
-                                    class="w-16 h-16 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin"
-                                ></div>
-                                <div
-                                    class="absolute inset-0 flex items-center justify-center"
-                                >
-                                    <i
-                                        data-lucide="cpu"
-                                        class="w-6 h-6 text-gray-600 animate-pulse"
-                                    ></i>
-                                </div>
-                            </div>
-                            <p
-                                class="mt-6 text-gray-400 font-medium animate-pulse"
-                                x-text="loadingText"
-                            ></p>
-                        </div>
-
-                        <div
                             x-show="mode === 'search' && searchResults.length > 0"
-                            class="space-y-6"
+                            class="space-y-4 animate-fade-in"
                             x-cloak
                         >
-                            <div class="flex items-center justify-between">
+                            <div
+                                class="flex items-center justify-between pb-2 border-b border-gray-800"
+                            >
                                 <h3
-                                    class="text-sm font-medium text-gray-400 uppercase tracking-wider"
+                                    class="text-sm font-bold text-gray-400 uppercase tracking-wider"
                                 >
-                                    Search Results
+                                    Matches Found
                                 </h3>
                                 <span
-                                    class="text-xs px-2 py-1 bg-gray-800 rounded text-gray-400"
-                                    x-text="searchResults.length + ' matches'"
+                                    class="text-xs px-2 py-1 bg-gray-800 rounded text-blue-400 font-mono"
+                                    x-text="searchResults.length"
                                 ></span>
                             </div>
 
                             <template
-                                x-for="result in searchResults"
-                                :key="result.filePath + result.startLine"
+                                x-for="(result, idx) in searchResults"
+                                :key="idx"
                             >
                                 <div
-                                    class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:border-gray-700 transition group"
+                                    class="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden hover:border-gray-600 transition group"
                                 >
                                     <div
-                                        class="px-4 py-3 bg-gray-800/50 border-b border-gray-800 flex items-center justify-between"
+                                        class="px-4 py-2 bg-gray-800/30 border-b border-gray-800 flex items-center justify-between"
                                     >
-                                        <div class="flex items-center gap-3">
+                                        <div
+                                            class="flex items-center gap-3 overflow-hidden"
+                                        >
                                             <i
                                                 data-lucide="file-code"
-                                                class="w-4 h-4 text-blue-400"
+                                                class="w-4 h-4 text-blue-400 shrink-0"
                                             ></i>
                                             <span
-                                                class="text-sm font-medium text-blue-100 font-mono"
+                                                class="text-sm font-medium text-blue-100 font-mono truncate"
                                                 x-text="result.filePath"
                                             ></span>
+
+                                            <span
+                                                x-show="result.signature"
+                                                class="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded border border-gray-700 font-mono truncate max-w-[200px]"
+                                                x-text="result.signature"
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-4 shrink-0"
+                                        >
                                             <span
                                                 class="text-xs text-gray-500 font-mono"
-                                                >Lines
-                                                <span
+                                                >L<span
                                                     x-text="result.startLine"
                                                 ></span
                                                 >-<span
                                                     x-text="result.endLine"
                                                 ></span
                                             ></span>
+                                            <div
+                                                class="text-xs font-mono font-bold"
+                                                :class="result.score > 0.8 ? 'text-emerald-400' : 'text-amber-400'"
+                                                x-text="(result.score * 100).toFixed(0) + '%'"
+                                            ></div>
                                         </div>
-                                        <div
-                                            class="text-xs font-mono text-emerald-400"
-                                            x-text="'Score: ' + (result.score * 100).toFixed(0) + '%'"
-                                        ></div>
                                     </div>
-                                    <div class="p-0 relative bg-[#0d1117]">
+                                    <div
+                                        class="relative bg-[#0d1117] group-hover:bg-[#161b22] transition-colors"
+                                    >
                                         <pre
-                                            class="p-4 text-sm text-gray-300 overflow-x-auto"
+                                            class="p-4 text-xs md:text-sm text-gray-300 overflow-x-auto whitespace-pre-wrap"
                                         ><code x-text="result.content"></code></pre>
                                         <button
                                             @click="copyCode(result.content)"
-                                            class="absolute top-2 right-2 p-2 bg-gray-800 text-gray-400 rounded hover:text-white hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition"
+                                            class="absolute top-2 right-2 p-1.5 bg-gray-700 text-gray-300 rounded hover:text-white opacity-0 group-hover:opacity-100 transition shadow-lg"
                                         >
                                             <i
                                                 data-lucide="copy"
-                                                class="w-4 h-4"
+                                                class="w-3.5 h-3.5"
                                             ></i>
                                         </button>
                                     </div>
@@ -525,117 +557,173 @@
                         </div>
 
                         <div
-                            x-show="mode === 'agent' && taskResult"
-                            class="space-y-8 animate-fade-in"
+                            x-show="mode === 'agent'"
+                            class="space-y-8"
                             x-cloak
                         >
                             <div
-                                class="flex items-center justify-between bg-gray-900 p-4 rounded-xl border border-gray-800"
-                            >
-                                <div>
-                                    <div
-                                        class="text-xs text-gray-500 uppercase font-semibold mb-1"
-                                    >
-                                        Execution Status
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                                        ></div>
-                                        <span
-                                            class="font-medium text-white capitalize"
-                                            x-text="taskResult?.status || 'Completed'"
-                                        ></span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div
-                                        class="text-xs text-gray-500 uppercase font-semibold mb-1"
-                                    >
-                                        Complexity
-                                    </div>
-                                    <span
-                                        class="px-2.5 py-1 rounded-md text-xs font-bold border"
-                                        :class="{
-                                            'bg-emerald-500/10 text-emerald-400 border-emerald-500/20': taskResult?.complexity === 0,
-                                            'bg-amber-500/10 text-amber-400 border-amber-500/20': taskResult?.complexity === 1,
-                                            'bg-red-500/10 text-red-400 border-red-500/20': taskResult?.complexity === 2
-                                          }"
-                                        x-text="getComplexityLabel(taskResult?.complexity)"
-                                    >
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div
-                                x-show="taskResult?.plan"
-                                class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden"
+                                x-show="chatHistory.length === 0 && !isLoading"
+                                class="text-center py-12 opacity-40"
                             >
                                 <div
-                                    class="px-4 py-3 border-b border-gray-800 flex items-center gap-2 bg-gray-800/30"
+                                    class="bg-gray-800 w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
                                 >
                                     <i
-                                        data-lucide="map"
-                                        class="w-4 h-4 text-purple-400"
+                                        data-lucide="terminal"
+                                        class="w-8 h-8 text-gray-500"
                                     ></i>
-                                    <h3
-                                        class="text-sm font-medium text-gray-200"
-                                    >
-                                        Implementation Plan
-                                    </h3>
                                 </div>
-                                <div
-                                    class="p-5 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono"
-                                    x-text="taskResult?.plan"
-                                ></div>
+                                <p class="text-gray-500">
+                                    Agent ready. Define a task.
+                                </p>
                             </div>
+
+                            <template
+                                x-for="(msg, index) in chatHistory"
+                                :key="index"
+                            >
+                                <div class="msg-animate space-y-4">
+                                    <div class="flex justify-end">
+                                        <div
+                                            class="bg-gray-800 text-gray-100 px-5 py-3 rounded-2xl rounded-tr-none max-w-2xl border border-gray-700 shadow-lg"
+                                        >
+                                            <p
+                                                class="whitespace-pre-wrap"
+                                                x-text="msg.prompt"
+                                            ></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-4 max-w-4xl">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 shadow-lg mt-1"
+                                        >
+                                            <i
+                                                data-lucide="bot"
+                                                class="w-5 h-5 text-white"
+                                            ></i>
+                                        </div>
+
+                                        <div class="flex-1 space-y-4 min-w-0">
+                                            <div
+                                                class="flex items-center gap-3"
+                                            >
+                                                <span
+                                                    class="text-xs font-bold px-2 py-0.5 rounded border"
+                                                    :class="{
+                                                        'bg-emerald-900/30 text-emerald-400 border-emerald-800': msg.result.complexity === 0,
+                                                        'bg-amber-900/30 text-amber-400 border-amber-800': msg.result.complexity === 1,
+                                                        'bg-red-900/30 text-red-400 border-red-800': msg.result.complexity === 2
+                                                    }"
+                                                    x-text="getComplexityLabel(msg.result.complexity)"
+                                                ></span>
+                                                <span
+                                                    class="text-xs text-gray-500"
+                                                    x-text="'Executed in ' + (msg.timestamp || 'now')"
+                                                ></span>
+                                            </div>
+
+                                            <div
+                                                x-data="{ expanded: false }"
+                                                class="border border-gray-800 rounded-lg overflow-hidden bg-gray-900/50"
+                                            >
+                                                <button
+                                                    @click="expanded = !expanded"
+                                                    class="w-full flex items-center justify-between px-4 py-2 bg-gray-800/50 hover:bg-gray-800 transition text-xs text-gray-400 uppercase font-semibold"
+                                                >
+                                                    <span
+                                                        >Process Log (<span
+                                                            x-text="msg.result.stages ? msg.result.stages.length : 0"
+                                                        ></span>
+                                                        steps)</span
+                                                    >
+                                                    <i
+                                                        data-lucide="chevron-down"
+                                                        class="w-4 h-4 transition-transform"
+                                                        :class="expanded ? 'rotate-180' : ''"
+                                                    ></i>
+                                                </button>
+                                                <div
+                                                    x-show="expanded"
+                                                    class="divide-y divide-gray-800/50"
+                                                >
+                                                    <template
+                                                        x-for="stage in msg.result.stages"
+                                                        :key="stage.stage"
+                                                    >
+                                                        <div
+                                                            class="p-3 text-sm flex justify-between items-start gap-4"
+                                                        >
+                                                            <div
+                                                                class="flex items-center gap-2"
+                                                            >
+                                                                <i
+                                                                    data-lucide="check-circle-2"
+                                                                    class="w-4 h-4 text-emerald-500 shrink-0"
+                                                                ></i>
+                                                                <span
+                                                                    class="text-gray-300 capitalize"
+                                                                    x-text="stage.stage.replace(/_/g, ' ')"
+                                                                ></span>
+                                                            </div>
+                                                            <span
+                                                                class="text-xs text-gray-600 font-mono whitespace-nowrap"
+                                                                x-text="(stage.duration / 1000000).toFixed(0) + 'ms'"
+                                                            ></span>
+
+                                                            <div
+                                                                x-show="stage.stage === 'planning' && stage.output"
+                                                                class="w-full mt-2 pt-2 border-t border-gray-800 text-gray-400 font-mono text-xs whitespace-pre-wrap"
+                                                                x-text="stage.output"
+                                                            ></div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                x-show="msg.result.final_output"
+                                                class="rounded-lg border border-gray-800 overflow-hidden shadow-lg bg-[#0d1117]"
+                                            >
+                                                <div
+                                                    class="flex items-center justify-between px-4 py-2 bg-gray-800/50 border-b border-gray-800"
+                                                >
+                                                    <span
+                                                        class="text-xs font-mono text-gray-400"
+                                                        >Solution</span
+                                                    >
+                                                    <button
+                                                        @click="copyCode(msg.result.final_output)"
+                                                        class="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition"
+                                                    >
+                                                        <i
+                                                            data-lucide="copy"
+                                                            class="w-3 h-3"
+                                                        ></i>
+                                                        Copy
+                                                    </button>
+                                                </div>
+                                                <pre
+                                                    class="p-4 text-sm text-gray-200 overflow-x-auto font-mono leading-relaxed"
+                                                ><code x-text="msg.result.final_output"></code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
 
                             <div
-                                x-show="taskResult?.generatedCode"
-                                class="rounded-xl border border-gray-800 overflow-hidden shadow-2xl"
+                                x-show="chatHistory.length > 0"
+                                class="flex justify-center pt-8"
                             >
-                                <div
-                                    class="px-4 py-3 bg-gray-900 border-b border-gray-800 flex items-center justify-between"
+                                <button
+                                    @click="chatHistory = []"
+                                    class="text-xs text-gray-600 hover:text-red-400 flex items-center gap-2 transition"
                                 >
-                                    <div class="flex items-center gap-2">
-                                        <i
-                                            data-lucide="code-2"
-                                            class="w-4 h-4 text-blue-400"
-                                        ></i>
-                                        <h3
-                                            class="text-sm font-medium text-gray-200"
-                                        >
-                                            Generated Solution
-                                        </h3>
-                                    </div>
-                                    <button
-                                        @click="copyCode(taskResult?.generatedCode)"
-                                        class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition"
-                                    >
-                                        <i
-                                            data-lucide="copy"
-                                            class="w-3.5 h-3.5"
-                                        ></i>
-                                        Copy
-                                    </button>
-                                </div>
-                                <div class="bg-[#0d1117] p-0 overflow-x-auto">
-                                    <pre
-                                        class="p-5 text-sm font-mono text-gray-300 leading-6"
-                                    ><code x-text="taskResult?.generatedCode"></code></pre>
-                                </div>
+                                    <i data-lucide="trash" class="w-3 h-3"></i>
+                                    Clear History
+                                </button>
                             </div>
-                        </div>
-
-                        <div
-                            x-show="!isLoading && searchResults.length === 0 && !taskResult"
-                            class="text-center py-20 opacity-50"
-                        >
-                            <i
-                                data-lucide="terminal"
-                                class="w-16 h-16 mx-auto mb-4 text-gray-700"
-                            ></i>
-                            <p class="text-gray-500">Ready for instructions.</p>
                         </div>
                     </div>
                 </div>
@@ -648,7 +736,7 @@
             x-cloak
         >
             <div
-                class="bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl w-full max-w-lg overflow-hidden"
+                class="bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl w-full max-w-lg overflow-hidden transform transition-all"
                 @click.away="showAddModal = false"
             >
                 <div class="p-6">
@@ -656,36 +744,66 @@
                         Import Repository
                     </h3>
                     <p class="text-gray-400 text-sm mb-6">
-                        Connect a local directory to begin semantic indexing.
+                        Upload a ZIP file containing your source code.
                     </p>
 
                     <div class="space-y-4">
                         <div>
                             <label
-                                class="block text-xs font-semibold text-gray-500 uppercase mb-1.5"
+                                class="block text-xs font-bold text-gray-500 uppercase mb-1.5"
                                 >Project Name</label
                             >
                             <input
                                 x-model="newRepo.name"
                                 type="text"
-                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition"
                                 placeholder="e.g., backend-api"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-xs font-semibold text-gray-500 uppercase mb-1.5"
-                                >Absolute Path</label
+                                class="block text-xs font-bold text-gray-500 uppercase mb-1.5"
+                                >Source Archive (.zip)</label
                             >
-                            <input
-                                x-model="newRepo.path"
-                                type="text"
-                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
-                                placeholder="/home/user/projects/backend"
-                            />
-                            <p class="text-xs text-gray-600 mt-2">
-                                The path must be accessible by the server.
-                            </p>
+                            <label
+                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-800 border-dashed rounded-lg cursor-pointer bg-gray-950 hover:bg-gray-900 transition hover:border-blue-500/50"
+                            >
+                                <div
+                                    class="flex flex-col items-center justify-center pt-5 pb-6"
+                                    x-show="!newRepo.file"
+                                >
+                                    <i
+                                        data-lucide="upload-cloud"
+                                        class="w-8 h-8 text-gray-500 mb-2"
+                                    ></i>
+                                    <p class="text-sm text-gray-500">
+                                        Click to upload or drag and drop
+                                    </p>
+                                </div>
+                                <div
+                                    class="flex flex-col items-center justify-center pt-5 pb-6"
+                                    x-show="newRepo.file"
+                                >
+                                    <i
+                                        data-lucide="file-archive"
+                                        class="w-8 h-8 text-blue-500 mb-2"
+                                    ></i>
+                                    <p
+                                        class="text-sm text-white font-medium"
+                                        x-text="newRepo.file?.name"
+                                    ></p>
+                                    <p
+                                        class="text-xs text-gray-500"
+                                        x-text="formatFileSize(newRepo.file?.size || 0)"
+                                    ></p>
+                                </div>
+                                <input
+                                    type="file"
+                                    class="hidden"
+                                    accept=".zip"
+                                    @change="handleFileSelect"
+                                />
+                            </label>
                         </div>
                     </div>
 
@@ -698,9 +816,11 @@
                         </button>
                         <button
                             @click="addRepo()"
-                            class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition"
+                            class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            :disabled="!newRepo.file || !newRepo.name || isLoading"
                         >
-                            Start Indexing
+                            <span x-show="!isLoading">Start Indexing</span>
+                            <span x-show="isLoading">Uploading...</span>
                         </button>
                     </div>
                 </div>
@@ -718,21 +838,21 @@
             >
                 <div class="p-6">
                     <h3 class="text-xl font-bold text-white mb-2">
-                        System Configuration
+                        Configuration
                     </h3>
                     <p class="text-gray-400 text-sm mb-6">
-                        Manage LLM providers and indexing parameters.
+                        Manage LLM models and pipeline settings.
                     </p>
 
                     <div class="space-y-6">
                         <div>
                             <label
-                                class="block text-xs font-semibold text-gray-500 uppercase mb-1.5"
-                                >Embedding Model (Search)</label
+                                class="block text-xs font-bold text-gray-500 uppercase mb-1.5"
+                                >Embedding Model (RAG)</label
                             >
                             <select
                                 x-model="llmSettings.current"
-                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white outline-none"
+                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white outline-none focus:border-blue-500"
                             >
                                 <template
                                     x-for="model in llmSettings.available"
@@ -745,56 +865,66 @@
                                     ></option>
                                 </template>
                             </select>
-                            <div
-                                class="flex items-start gap-2 mt-2 text-xs text-amber-500/80"
+                            <p
+                                class="mt-2 text-xs text-amber-500 flex items-center gap-1.5"
                             >
                                 <i
                                     data-lucide="alert-triangle"
-                                    class="w-4 h-4 shrink-0"
+                                    class="w-3.5 h-3.5"
                                 ></i>
-                                <span
-                                    >Changing this will trigger a full re-index
-                                    of all repositories.</span
-                                >
-                            </div>
+                                Changing this triggers a full re-index.
+                            </p>
                         </div>
 
                         <div class="pt-4 border-t border-gray-800">
                             <label
-                                class="block text-xs font-semibold text-gray-500 uppercase mb-3"
-                                >Agent Pipeline Models</label
+                                class="block text-xs font-bold text-gray-500 uppercase mb-3"
+                                >Agent Pipeline</label
                             >
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <span
                                         class="text-xs text-gray-400 block mb-1"
-                                        >Planner (Architect)</span
+                                        >Planner</span
                                     >
                                     <select
-                                        class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-sm text-gray-400 outline-none"
-                                        disabled
+                                        x-model="llmSettings.planner"
+                                        class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-sm text-white outline-none"
                                     >
-                                        <option>llama3:instruct</option>
-                                        <option>gpt-4</option>
+                                        <option value="">System Default</option>
+                                        <template
+                                            x-for="model in llmSettings.available"
+                                            :key="model"
+                                        >
+                                            <option
+                                                :value="model"
+                                                x-text="model"
+                                            ></option>
+                                        </template>
                                     </select>
                                 </div>
                                 <div>
                                     <span
                                         class="text-xs text-gray-400 block mb-1"
-                                        >Coder (Developer)</span
+                                        >Coder</span
                                     >
                                     <select
-                                        class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-sm text-gray-400 outline-none"
-                                        disabled
+                                        x-model="llmSettings.coder"
+                                        class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-sm text-white outline-none"
                                     >
-                                        <option>codellama:latest</option>
-                                        <option>mistral</option>
+                                        <option value="">System Default</option>
+                                        <template
+                                            x-for="model in llmSettings.available"
+                                            :key="model"
+                                        >
+                                            <option
+                                                :value="model"
+                                                x-text="model"
+                                            ></option>
+                                        </template>
                                     </select>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-600 mt-2">
-                                Configured in <code>config.yaml</code>.
-                            </p>
                         </div>
                     </div>
 
@@ -807,9 +937,9 @@
                         </button>
                         <button
                             @click="saveSettings()"
-                            class="px-5 py-2 rounded-lg text-sm font-medium bg-red-600/90 text-white hover:bg-red-500 shadow-lg shadow-red-900/20 transition"
+                            class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition"
                         >
-                            Apply Changes
+                            Save Changes
                         </button>
                     </div>
                 </div>
@@ -817,12 +947,22 @@
         </div>
 
         <div
-            x-show="showToast"
-            x-transition.move.bottom.duration.300ms
-            class="fixed bottom-6 right-6 bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50"
+            class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"
         >
-            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
-            <span class="text-sm font-medium" x-text="toastMessage"></span>
+            <template x-for="t in toasts" :key="t.id">
+                <div
+                    class="bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 pointer-events-auto min-w-[300px] animate-fade-in"
+                >
+                    <i
+                        :data-lucide="t.type === 'error' ? 'alert-circle' : (t.type === 'success' ? 'check-circle' : 'info')"
+                        class="w-5 h-5 shrink-0"
+                        :class="t.type === 'error' ? 'text-red-400' : (t.type === 'success' ? 'text-emerald-400' : 'text-blue-400')"
+                    ></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium" x-text="t.message"></p>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <script>
@@ -836,9 +976,8 @@
                     authForm: { username: "", password: "" },
 
                     // App State
-                    mode: "search", // 'search' | 'agent'
+                    mode: "search",
                     isLoading: false,
-                    loadingText: "Thinking...",
                     showAddModal: false,
                     showSettingsModal: false,
 
@@ -850,29 +989,43 @@
                     // Search Results
                     searchResults: [],
 
-                    // Agent Results
-                    taskResult: null,
+                    // Agent State
+                    chatHistory: [], // Stores { prompt, result, timestamp }
                     agentOptions: { validation: true, autoMode: true },
 
                     // Forms
-                    newRepo: { name: "", path: "" },
-                    llmSettings: { current: "", available: [] },
+                    newRepo: { name: "", file: null },
+                    llmSettings: {
+                        current: "",
+                        available: [],
+                        planner: localStorage.getItem("planner_model") || "",
+                        coder: localStorage.getItem("coder_model") || "",
+                    },
 
                     // Utils
-                    showToast: false,
-                    toastMessage: "",
+                    toasts: [],
+                    pollInterval: null,
 
                     init() {
                         this.$watch("isLoggedIn", (val) => {
                             if (val) this.refreshData();
+                            else clearInterval(this.pollInterval);
                         });
-                        if (this.isLoggedIn) this.refreshData();
 
-                        setInterval(() => {
-                            if (this.isLoggedIn) this.fetchRepos();
-                        }, 5000);
+                        if (this.isLoggedIn) {
+                            this.refreshData();
+                            this.startPolling();
+                        }
 
                         this.$nextTick(() => lucide.createIcons());
+                    },
+
+                    startPolling() {
+                        if (this.pollInterval) clearInterval(this.pollInterval);
+                        this.pollInterval = setInterval(() => {
+                            if (this.isLoggedIn && !this.isLoading)
+                                this.fetchRepos(true); // Silent update
+                        }, 5000);
                     },
 
                     refreshData() {
@@ -882,15 +1035,17 @@
 
                     setMode(m) {
                         this.mode = m;
-                        this.query = "";
-                        this.searchResults = [];
-                        this.taskResult = null;
+                        // Don't clear query when switching to preserve thought process
+                        this.$nextTick(() => {
+                            // Focus textarea if needed
+                        });
                     },
 
-                    // --- Actions ---
+                    // --- CORE ACTIONS ---
 
                     async execute() {
-                        if (!this.query.trim()) return;
+                        if (!this.query.trim() || this.isLoading) return;
+
                         if (this.mode === "search") {
                             await this.search();
                         } else {
@@ -900,21 +1055,22 @@
 
                     async search() {
                         this.isLoading = true;
-                        this.loadingText = "Scanning vector index...";
                         this.searchResults = [];
 
                         const repoFilter = this.activeRepo
                             ? `, repositoryId: "${this.activeRepo}"`
                             : "";
                         const safeQuery = this.query.replace(/"/g, '\\"');
-                        const q = `query { search(query: "${safeQuery}", limit: 20${repoFilter}) { filePath startLine endLine content score } }`;
+                        // Added 'signature' to query
+                        const q = `query { search(query: "${safeQuery}", limit: 50${repoFilter}) { filePath startLine endLine content score signature } }`;
 
                         try {
                             const data = await this.queryGraph(q);
                             this.searchResults = data.search;
+                            if (this.searchResults.length === 0)
+                                this.toast("No results found", "info");
                         } catch (e) {
-                            console.error(e);
-                            alert("Search error: " + e.message);
+                            this.toast(e.message, "error");
                         } finally {
                             this.isLoading = false;
                             this.$nextTick(() => lucide.createIcons());
@@ -922,56 +1078,151 @@
                     },
 
                     async executeTask() {
-                        this.isLoading = true;
-                        this.loadingText = "Analyzing complexity & planning...";
-                        this.taskResult = null;
-
-                        // Fallback Project ID if none selected (should ideally require one)
+                        const currentQuery = this.query;
                         const projectID =
                             this.activeRepo || this.repositories[0]?.id;
 
                         if (!projectID) {
-                            alert("Please select a repository first.");
-                            this.isLoading = false;
+                            this.toast(
+                                "Please import or select a repository first.",
+                                "error",
+                            );
                             return;
                         }
 
-                        const safeQuery = this.query
-                            .replace(/"/g, '\\"')
-                            .replace(/\n/g, "\\n");
-                        const mutation = `
-                            mutation {
-                                executeTask(query: "${safeQuery}", projectID: "${projectID}") {
-                                    executionID
-                                    status
-                                    plan
-                                    generatedCode
-                                    complexity
-                                }
-                            }
-                        `;
+                        this.isLoading = true;
+                        this.query = ""; // Clear input for better UX immediately
 
                         try {
-                            const data = await this.queryGraph(mutation);
-                            this.taskResult = data.executeTask;
+                            const headers = {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${this.token}`,
+                            };
+
+                            const res = await fetch("/chat", {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({
+                                    project_id: projectID,
+                                    message: currentQuery,
+                                    planner_model:
+                                        this.llmSettings.planner || undefined,
+                                    coder_model:
+                                        this.llmSettings.coder || undefined,
+                                    enable_validation:
+                                        this.agentOptions.validation,
+                                    forced_mode: this.agentOptions.autoMode
+                                        ? null
+                                        : "full",
+                                }),
+                            });
+
+                            if (!res.ok) throw new Error(await res.text());
+                            const json = await res.json();
+
+                            // Add to history instead of overwriting
+                            this.chatHistory.push({
+                                prompt: currentQuery,
+                                result: json.execution,
+                                timestamp: new Date().toLocaleTimeString(),
+                            });
+
+                            // Scroll to bottom
+                            this.$nextTick(() => {
+                                const container =
+                                    document.getElementById("main-scroll");
+                                container.scrollTop = container.scrollHeight;
+                                lucide.createIcons();
+                            });
                         } catch (e) {
-                            console.error(e);
-                            alert("Agent Error: " + e.message);
+                            this.toast("Agent failure: " + e.message, "error");
+                            this.query = currentQuery; // Restore query on error
                         } finally {
                             this.isLoading = false;
-                            this.$nextTick(() => lucide.createIcons());
                         }
                     },
 
-                    // --- API & Auth (Same as before, streamlined) ---
+                    // --- UPLOAD & REPO ---
+
+                    handleFileSelect(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        // Senior Dev Validation
+                        if (!file.name.toLowerCase().endsWith(".zip")) {
+                            this.toast("Only .zip files are allowed", "error");
+                            e.target.value = "";
+                            return;
+                        }
+                        // 50MB Limit Check (matches backend Go code)
+                        if (file.size > 50 * 1024 * 1024) {
+                            this.toast("File too large (Max 50MB)", "error");
+                            e.target.value = "";
+                            return;
+                        }
+                        this.newRepo.file = file;
+                        if (!this.newRepo.name) {
+                            this.newRepo.name = file.name.replace(
+                                /\.zip$/i,
+                                "",
+                            );
+                        }
+                    },
+
+                    async addRepo() {
+                        if (!this.newRepo.file || !this.newRepo.name) return;
+
+                        this.isLoading = true;
+
+                        // FormData construction for GraphQL Upload
+                        const operations = {
+                            query: `mutation($file: Upload!, $name: String!) { uploadRepository(name: $name, file: $file) { id } }`,
+                            variables: { file: null, name: this.newRepo.name },
+                        };
+
+                        const map = { 0: ["variables.file"] };
+                        const body = new FormData();
+                        body.append("operations", JSON.stringify(operations));
+                        body.append("map", JSON.stringify(map));
+                        body.append("0", this.newRepo.file);
+
+                        try {
+                            const res = await fetch("/query", {
+                                method: "POST",
+                                headers: {
+                                    Authorization: `Bearer ${this.token}`,
+                                },
+                                body: body,
+                            });
+
+                            const json = await res.json();
+                            if (json.errors)
+                                throw new Error(json.errors[0].message);
+
+                            this.showAddModal = false;
+                            this.newRepo = { name: "", file: null };
+                            this.toast(
+                                "Repository uploaded. Indexing started.",
+                                "success",
+                            );
+                            this.fetchRepos();
+                        } catch (e) {
+                            this.toast("Upload failed: " + e.message, "error");
+                        } finally {
+                            this.isLoading = false;
+                        }
+                    },
+
+                    // --- AUTH ---
                     async login() {
                         this.isLoading = true;
                         const q = `mutation { login(username: "${this.authForm.username}", password: "${this.authForm.password}") { token user { id username role } } }`;
                         try {
                             const data = await this.queryGraph(q, true);
                             this.handleAuth(data.login);
+                            this.toast("Welcome back!", "success");
                         } catch (e) {
-                            alert(e.message);
+                            this.toast(e.message, "error");
                         } finally {
                             this.isLoading = false;
                         }
@@ -983,8 +1234,12 @@
                         try {
                             const data = await this.queryGraph(q, true);
                             this.handleAuth(data.register);
+                            this.toast(
+                                "Account created successfully",
+                                "success",
+                            );
                         } catch (e) {
-                            alert(e.message);
+                            this.toast(e.message, "error");
                         } finally {
                             this.isLoading = false;
                         }
@@ -1002,40 +1257,57 @@
                     logout() {
                         this.token = null;
                         this.user = null;
-                        localStorage.clear();
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("user");
                         this.isLoggedIn = false;
                         this.authView = "login";
+                        this.chatHistory = [];
+                        this.repositories = [];
                     },
 
-                    // --- Repos & Settings ---
-                    async fetchRepos() {
+                    // --- DATA & API ---
+
+                    async fetchRepos(silent = false) {
                         try {
+                            // Added ChunkCount, LastIndexed, ErrorMsg
                             const data = await this.queryGraph(
-                                `query { repositories { id name status fileCount } }`,
+                                `query { repositories { id name status fileCount chunkCount lastIndexed errorMsg } }`,
+                                false,
+                                silent,
                             );
+                            // Only update if array changed significantly or we want to update status
                             this.repositories = data.repositories;
-                        } catch (e) {}
-                    },
 
-                    async addRepo() {
-                        const m = `mutation { createRepository(name: "${this.newRepo.name}", path: "${this.newRepo.path.replace(/\\/g, "\\\\")}") { id } }`;
-                        try {
-                            await this.queryGraph(m);
-                            this.showAddModal = false;
-                            this.toast("Indexing started");
-                            this.fetchRepos();
+                            // If active repo was deleted, deselect
+                            if (
+                                this.activeRepo &&
+                                !this.repositories.find(
+                                    (r) => r.id === this.activeRepo,
+                                )
+                            ) {
+                                this.activeRepo = null;
+                            }
                         } catch (e) {
-                            alert(e.message);
+                            if (!silent) console.error(e);
                         }
                     },
 
                     async deleteRepo(id) {
-                        if (!confirm("Delete repo?")) return;
-                        await this.queryGraph(
-                            `mutation { deleteRepository(id: "${id}") }`,
-                        );
-                        this.fetchRepos();
-                        this.toast("Deleted");
+                        if (
+                            !confirm(
+                                "Are you sure? This action cannot be undone.",
+                            )
+                        )
+                            return;
+                        try {
+                            await this.queryGraph(
+                                `mutation { deleteRepository(id: "${id}") }`,
+                            );
+                            this.toast("Repository deleted", "success");
+                            this.fetchRepos();
+                        } catch (e) {
+                            this.toast(e.message, "error");
+                        }
                     },
 
                     async reindexRepo(id) {
@@ -1043,9 +1315,10 @@
                             await this.queryGraph(
                                 `mutation { reindexRepository(id: "${id}") }`,
                             );
-                            this.toast("Reindexing...");
+                            this.toast("Reindexing triggered", "info");
+                            this.fetchRepos();
                         } catch (e) {
-                            alert(e.message);
+                            this.toast(e.message, "error");
                         }
                     },
 
@@ -1062,48 +1335,68 @@
                     },
 
                     async saveSettings() {
-                        if (!confirm("Changing models clears index. Continue?"))
-                            return;
+                        localStorage.setItem(
+                            "planner_model",
+                            this.llmSettings.planner,
+                        );
+                        localStorage.setItem(
+                            "coder_model",
+                            this.llmSettings.coder,
+                        );
+
                         try {
                             await this.queryGraph(
                                 `mutation { setEmbeddingModel(model: "${this.llmSettings.current}") }`,
                             );
                             this.showSettingsModal = false;
-                            this.toast("Settings saved & Reindexing");
+                            this.toast(
+                                "Configuration updated. Reindexing started.",
+                                "success",
+                            );
+                            this.fetchRepos();
                         } catch (e) {
-                            alert(e.message);
+                            this.toast(e.message, "error");
                         }
                     },
 
-                    // --- Helpers ---
-                    async queryGraph(query, skipAuth = false) {
+                    async queryGraph(query, skipAuth = false, silent = false) {
                         const headers = { "Content-Type": "application/json" };
                         if (this.token)
                             headers["Authorization"] = `Bearer ${this.token}`;
+
                         const res = await fetch("/query", {
                             method: "POST",
                             headers,
                             body: JSON.stringify({ query }),
                         });
+
                         if (res.status === 401 && !skipAuth) {
                             this.logout();
                             throw new Error("Session expired");
                         }
+
                         const json = await res.json();
                         if (json.errors)
                             throw new Error(json.errors[0].message);
                         return json.data;
                     },
 
-                    copyCode(text) {
-                        navigator.clipboard.writeText(text);
-                        this.toast("Copied to clipboard");
+                    // --- HELPERS ---
+
+                    toast(message, type = "info") {
+                        const id = Date.now();
+                        this.toasts.push({ id, message, type });
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(
+                                (t) => t.id !== id,
+                            );
+                        }, 4000);
+                        this.$nextTick(() => lucide.createIcons());
                     },
 
-                    toast(msg) {
-                        this.toastMessage = msg;
-                        this.showToast = true;
-                        setTimeout(() => (this.showToast = false), 3000);
+                    copyCode(text) {
+                        navigator.clipboard.writeText(text);
+                        this.toast("Copied to clipboard", "success");
                     },
 
                     getActiveRepoName() {
@@ -1119,11 +1412,29 @@
                     },
 
                     getComplexityLabel(c) {
-                        return c === 0
-                            ? "Simple"
-                            : c === 1
-                              ? "Medium"
-                              : "Complex";
+                        return ["Simple", "Medium", "Complex"][c] || "Unknown";
+                    },
+
+                    formatSize(bytes) {
+                        if (bytes === 0 || !bytes) return "0 Chunks";
+                        return bytes + " chunks"; // Simplified as schema says 'chunkCount', not bytes
+                    },
+
+                    formatFileSize(bytes) {
+                        if (bytes === 0) return "0 Bytes";
+                        const k = 1024;
+                        const sizes = ["Bytes", "KB", "MB", "GB"];
+                        const i = Math.floor(Math.log(bytes) / Math.log(k));
+                        return (
+                            parseFloat((bytes / Math.pow(k, i)).toFixed(2)) +
+                            " " +
+                            sizes[i]
+                        );
+                    },
+
+                    formatDate(isoString) {
+                        if (!isoString) return "";
+                        return new Date(isoString).toLocaleString();
                     },
                 };
             }

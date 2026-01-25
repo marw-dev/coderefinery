@@ -58,8 +58,8 @@ search:
 # Observability
 observability:
   logging:
-    level: "debug" # 'debug' ist gut für Dev, 'info' für Prod
-    format: "console" # 'console' (hübsch) oder 'json'
+    level: "info" # 'debug' ist gut für Dev, 'info' für Prod
+    format: "json" # 'console' (hübsch) oder 'json'
   metrics:
     enabled: true
     path: "/metrics"
@@ -74,3 +74,6 @@ cache:
   enabled: true
   redis_url: "redis://localhost:6379/0"
   ttl: 1h
+
+storage:
+  upload_dir: "./data/uploads"

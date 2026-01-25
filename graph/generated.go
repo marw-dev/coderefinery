@@ -65,6 +65,7 @@ type ComplexityRoot struct {
 		Register          func(childComplexity int, username string, password string) int
 		ReindexRepository func(childComplexity int, id string) int
 		SetEmbeddingModel func(childComplexity int, model string) int
+		UploadRepository  func(childComplexity int, name string, file graphql.Upload) int
 	}
 
 	Query struct {
@@ -105,6 +106,7 @@ type MutationResolver interface {
 	CreateRepository(ctx context.Context, name string, path string) (*model.Repository, error)
 	ReindexRepository(ctx context.Context, id string) (bool, error)
 	DeleteRepository(ctx context.Context, id string) (bool, error)
+	UploadRepository(ctx context.Context, name string, file graphql.Upload) (*model.Repository, error)
 	Register(ctx context.Context, username string, password string) (*model.AuthPayload, error)
 	Login(ctx context.Context, username string, password string) (*model.AuthPayload, error)
 	SetEmbeddingModel(ctx context.Context, model string) (bool, error)
@@ -227,6 +229,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SetEmbeddingModel(childComplexity, args["model"].(string)), true
+	case "Mutation.uploadRepository":
+		if e.complexity.Mutation.UploadRepository == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadRepository_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadRepository(childComplexity, args["name"].(string), args["file"].(graphql.Upload)), true
 
 	case "Query.llmInfo":
 		if e.complexity.Query.LlmInfo == nil {
@@ -564,6 +577,22 @@ func (ec *executionContext) field_Mutation_setEmbeddingModel_args(ctx context.Co
 		return nil, err
 	}
 	args["model"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadRepository_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	if err != nil {
+		return nil, err
+	}
+	args["file"] = arg1
 	return args, nil
 }
 
@@ -905,6 +934,65 @@ func (ec *executionContext) fieldContext_Mutation_deleteRepository(ctx context.C
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteRepository_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_uploadRepository(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_uploadRepository,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UploadRepository(ctx, fc.Args["name"].(string), fc.Args["file"].(graphql.Upload))
+		},
+		nil,
+		ec.marshalNRepository2ᚖcoderefineryᚋgraphᚋmodelᚐRepository,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadRepository(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Repository_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Repository_name(ctx, field)
+			case "path":
+				return ec.fieldContext_Repository_path(ctx, field)
+			case "status":
+				return ec.fieldContext_Repository_status(ctx, field)
+			case "lastIndexed":
+				return ec.fieldContext_Repository_lastIndexed(ctx, field)
+			case "fileCount":
+				return ec.fieldContext_Repository_fileCount(ctx, field)
+			case "chunkCount":
+				return ec.fieldContext_Repository_chunkCount(ctx, field)
+			case "errorMsg":
+				return ec.fieldContext_Repository_errorMsg(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Repository", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadRepository_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3403,6 +3491,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "uploadRepository":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadRepository(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "register":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_register(ctx, field)
@@ -4343,6 +4438,22 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (graphql.Upload, error) {
+	res, err := graphql.UnmarshalUpload(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v graphql.Upload) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalUpload(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNUser2ᚖcoderefineryᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {

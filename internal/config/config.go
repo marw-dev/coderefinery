@@ -14,12 +14,13 @@ type Config struct {
 	Server        ServerConfig        `mapstructure:"server" validate:"required"`
 	Indexer       IndexerConfig       `mapstructure:"indexer" validate:"required"`
 	Database      DatabaseConfig      `mapstructure:"database" validate:"required"`
-	VectorDB      VectorDBConfig      `mapstructure:"vectordb" validate:"required"` // NEU
+	VectorDB      VectorDBConfig      `mapstructure:"vectordb" validate:"required"`
 	Auth          AuthConfig          `mapstructure:"auth" validate:"required"`
 	LLM           LLMConfig           `mapstructure:"llm" validate:"required"`
 	Search        SearchConfig        `mapstructure:"search"`
 	Observability ObservabilityConfig `mapstructure:"observability"`
 	Cache         CacheConfig         `mapstructure:"cache"`
+	Storage		  StorageConfig		  `mapstructure:"storage"`
 }
 
 type ServerConfig struct {
@@ -113,6 +114,10 @@ type AgentConfig struct {
 	FallbackModel string `mapstructure:"fallback_model"`
 }
 
+type StorageConfig struct {
+    UploadDir string `mapstructure:"upload_dir" validate:"required"`
+}
+
 // NewDefault erstellt Defaults
 func NewDefault() *Config {
 	return &Config{
@@ -194,6 +199,9 @@ func NewDefault() *Config {
 			RedisURL: "redis://localhost:6379/0",
 			TTL:      1 * time.Hour,
 		},
+		Storage: StorageConfig{
+            UploadDir: "./data/uploads",
+        },
 	}
 }
 
@@ -267,6 +275,9 @@ func LoadConfig(path string) (*Config, error) {
 	v.SetDefault("cache.enabled", defaults.Cache.Enabled)
 	v.SetDefault("cache.redis_url", defaults.Cache.RedisURL)
 	v.SetDefault("cache.ttl", defaults.Cache.TTL)
+
+	// Uplaod
+	v.SetDefault("storage.upload_dir", defaults.Storage.UploadDir)
 
 	v.AddConfigPath(".")
 	v.AddConfigPath(path)
