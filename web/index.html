@@ -11,7 +11,7 @@
         ></script>
         <script src="https://unpkg.com/lucide@latest"></script>
         <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
             rel="stylesheet"
         />
 
@@ -19,141 +19,138 @@
             body {
                 font-family: "Inter", sans-serif;
             }
+            code,
+            pre {
+                font-family: "JetBrains Mono", monospace;
+            }
             [x-cloak] {
                 display: none !important;
             }
-            .code-scroll::-webkit-scrollbar {
+
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar {
                 width: 8px;
                 height: 8px;
             }
-            .code-scroll::-webkit-scrollbar-thumb {
+            ::-webkit-scrollbar-thumb {
                 background: #374151;
                 border-radius: 4px;
             }
-            .code-scroll::-webkit-scrollbar-track {
+            ::-webkit-scrollbar-track {
                 background: #1f2937;
+            }
+
+            .glass {
+                background: rgba(31, 41, 55, 0.7);
+                backdrop-filter: blur(10px);
             }
         </style>
     </head>
     <body
-        class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden"
+        class="bg-gray-950 text-gray-100 h-screen flex flex-col overflow-hidden"
         x-data="app()"
     >
         <div
             x-show="!isLoggedIn"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/90 backdrop-blur-sm"
+            x-transition.opacity
             x-cloak
         >
             <div
-                class="w-full max-w-md p-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700"
+                class="w-full max-w-md p-8 bg-gray-900 rounded-2xl shadow-2xl border border-gray-800"
             >
                 <div class="flex flex-col items-center mb-8">
-                    <div class="p-3 bg-blue-600/20 rounded-full mb-4">
+                    <div
+                        class="p-4 bg-blue-600/10 rounded-2xl mb-4 ring-1 ring-blue-500/20"
+                    >
                         <i
                             data-lucide="layers"
-                            class="w-10 h-10 text-blue-500"
+                            class="w-12 h-12 text-blue-500"
                         ></i>
                     </div>
-                    <h1 class="text-2xl font-bold tracking-tight">
+                    <h1
+                        class="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent"
+                    >
                         CodeRefinery
                     </h1>
-                    <p class="text-gray-400 text-sm mt-2">
-                        Enterprise Semantic Search
+                    <p class="text-gray-500 text-sm mt-2">
+                        AI-Powered Engineering Platform
                     </p>
                 </div>
 
-                <div x-show="authView === 'login'" class="space-y-4">
-                    <div>
-                        <label
-                            class="block text-xs font-medium text-gray-400 mb-1 uppercase"
-                            >Username</label
-                        >
+                <div x-show="authView === 'login'" class="space-y-5">
+                    <div class="space-y-4">
                         <input
                             type="text"
                             x-model="authForm.username"
                             @keydown.enter="login()"
-                            class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-                            placeholder="Enter your username"
+                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            placeholder="Username"
                         />
-                    </div>
-                    <div>
-                        <label
-                            class="block text-xs font-medium text-gray-400 mb-1 uppercase"
-                            >Password</label
-                        >
                         <input
                             type="password"
                             x-model="authForm.password"
                             @keydown.enter="login()"
-                            class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
-                            placeholder="••••••••"
+                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            placeholder="Password"
                         />
                     </div>
                     <button
                         @click="login()"
-                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg transition shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2"
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2"
                         :disabled="isLoading"
                     >
                         <span x-show="!isLoading">Sign In</span>
-                        <span
+                        <i
                             x-show="isLoading"
-                            class="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                        ></span>
+                            data-lucide="loader-2"
+                            class="w-5 h-5 animate-spin"
+                        ></i>
                     </button>
-                    <p class="text-center text-sm text-gray-400 mt-4">
+                    <p class="text-center text-sm text-gray-500">
                         No account?
                         <a
                             href="#"
                             @click.prevent="authView = 'register'"
-                            class="text-blue-400 hover:text-blue-300"
-                            >Register</a
+                            class="text-blue-400 hover:text-blue-300 transition"
+                            >Create one</a
                         >
                     </p>
                 </div>
 
-                <div x-show="authView === 'register'" class="space-y-4" x-cloak>
-                    <div>
-                        <label
-                            class="block text-xs font-medium text-gray-400 mb-1 uppercase"
-                            >Choose Username</label
-                        >
+                <div x-show="authView === 'register'" class="space-y-5" x-cloak>
+                    <div class="space-y-4">
                         <input
                             type="text"
                             x-model="authForm.username"
-                            class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            placeholder="Choose Username"
                         />
-                    </div>
-                    <div>
-                        <label
-                            class="block text-xs font-medium text-gray-400 mb-1 uppercase"
-                            >Choose Password</label
-                        >
                         <input
                             type="password"
                             x-model="authForm.password"
-                            class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            placeholder="Choose Password"
                         />
                     </div>
                     <button
                         @click="register()"
-                        class="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg transition shadow-lg shadow-green-900/20 flex justify-center items-center gap-2"
+                        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-emerald-900/20 flex justify-center items-center gap-2"
                         :disabled="isLoading"
                     >
                         <span x-show="!isLoading">Create Account</span>
-                        <span
+                        <i
                             x-show="isLoading"
-                            class="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                        ></span>
+                            data-lucide="loader-2"
+                            class="w-5 h-5 animate-spin"
+                        ></i>
                     </button>
-                    <p class="text-center text-sm text-gray-400 mt-4">
-                        Already have an account?
+                    <p class="text-center text-sm text-gray-500">
+                        Have an account?
                         <a
                             href="#"
                             @click.prevent="authView = 'login'"
-                            class="text-blue-400 hover:text-blue-300"
+                            class="text-blue-400 hover:text-blue-300 transition"
                             >Sign In</a
                         >
                     </p>
@@ -163,309 +160,482 @@
 
         <div x-show="isLoggedIn" class="flex flex-1 overflow-hidden" x-cloak>
             <div
-                class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col z-20"
+                class="w-72 bg-gray-900 border-r border-gray-800 flex flex-col z-20"
             >
-                <div
-                    class="p-4 border-b border-gray-700 flex items-center justify-between"
-                >
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="layers" class="text-blue-400"></i>
-                        <h1 class="font-bold text-lg tracking-tight">
-                            Refinery
-                        </h1>
+                <div class="p-5 border-b border-gray-800">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-500/10 rounded-lg">
+                            <i
+                                data-lucide="layers"
+                                class="w-5 h-5 text-blue-500"
+                            ></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-gray-100 tracking-tight">
+                                Refinery
+                            </h1>
+                            <p class="text-xs text-gray-500">v2.0 Enterprise</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="p-3">
-                    <button
-                        @click="showAddModal = true"
-                        class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition"
-                    >
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add
-                        Repo
-                    </button>
-                </div>
-
-                <div class="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
-                    <div
-                        class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-2 px-1"
-                    >
-                        Projects (<span x-text="repositories.length"></span>)
-                    </div>
-
-                    <template x-for="repo in repositories" :key="repo.id">
+                <div class="p-4 space-y-4 flex-1 overflow-y-auto">
+                    <div>
                         <div
-                            @click="selectRepo(repo.id)"
-                            class="group flex items-center justify-between p-2 rounded-md hover:bg-gray-700 cursor-pointer transition"
-                            :class="{'bg-gray-700 ring-1 ring-gray-600': activeRepo === repo.id}"
+                            class="flex items-center justify-between mb-3 px-1"
                         >
-                            <div
-                                class="flex items-center gap-3 overflow-hidden flex-1"
+                            <span
+                                class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                                >Repositories</span
+                            >
+                            <button
+                                @click="showAddModal = true"
+                                class="text-gray-400 hover:text-white transition"
+                            >
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-1">
+                            <template
+                                x-for="repo in repositories"
+                                :key="repo.id"
                             >
                                 <div
-                                    class="w-2 h-2 rounded-full flex-shrink-0"
-                                    :class="{
-                                    'bg-green-500': repo.status === 'ready',
-                                    'bg-yellow-500 animate-pulse': repo.status === 'indexing',
-                                    'bg-red-500': repo.status === 'error'
-                                }"
-                                ></div>
-                                <div class="flex flex-col truncate flex-1">
-                                    <span
-                                        class="text-sm font-medium truncate"
-                                        x-text="repo.name"
-                                    ></span>
-                                    <span
-                                        class="text-xs text-gray-500 truncate"
-                                        x-text="repo.fileCount + ' files'"
-                                    ></span>
+                                    @click="selectRepo(repo.id)"
+                                    class="group flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition relative overflow-hidden"
+                                    :class="activeRepo === repo.id ? 'bg-blue-600/10 text-blue-400 ring-1 ring-blue-500/20' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'"
+                                >
+                                    <div
+                                        class="w-2 h-2 rounded-full shrink-0"
+                                        :class="{
+                                            'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]': repo.status === 'ready',
+                                            'bg-amber-500 animate-pulse': repo.status === 'indexing',
+                                            'bg-red-500': repo.status === 'error'
+                                         }"
+                                    ></div>
+
+                                    <div class="flex-1 truncate">
+                                        <div
+                                            class="text-sm font-medium truncate"
+                                            x-text="repo.name"
+                                        ></div>
+                                        <div
+                                            class="text-xs opacity-60 truncate"
+                                            x-text="repo.fileCount + ' files'"
+                                        ></div>
+                                    </div>
+
+                                    <div
+                                        class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-gray-800 rounded-md shadow-sm"
+                                    >
+                                        <button
+                                            @click.stop="reindexRepo(repo.id)"
+                                            class="p-1.5 hover:text-blue-400"
+                                            title="Reindex"
+                                        >
+                                            <i
+                                                data-lucide="refresh-cw"
+                                                class="w-3.5 h-3.5"
+                                            ></i>
+                                        </button>
+                                        <button
+                                            @click.stop="deleteRepo(repo.id)"
+                                            class="p-1.5 hover:text-red-400"
+                                            title="Delete"
+                                        >
+                                            <i
+                                                data-lucide="trash-2"
+                                                class="w-3.5 h-3.5"
+                                            ></i>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            </template>
+
                             <div
-                                class="flex gap-1 opacity-0 group-hover:opacity-100 transition"
+                                x-show="repositories.length === 0"
+                                class="text-center py-8 text-gray-600 border border-dashed border-gray-800 rounded-lg"
                             >
-                                <button
-                                    @click.stop="reindexRepo(repo.id)"
-                                    class="text-gray-400 hover:text-blue-400 p-1"
-                                    title="Reindex"
-                                >
-                                    <i
-                                        data-lucide="refresh-cw"
-                                        class="w-3 h-3"
-                                    ></i>
-                                </button>
-                                <button
-                                    @click.stop="deleteRepo(repo.id)"
-                                    class="text-gray-400 hover:text-red-400 p-1"
-                                    title="Delete"
-                                >
-                                    <i
-                                        data-lucide="trash-2"
-                                        class="w-3 h-3"
-                                    ></i>
-                                </button>
+                                <span class="text-xs">No repositories</span>
                             </div>
                         </div>
-                    </template>
+                    </div>
                 </div>
 
-                <div class="p-4 bg-gray-900/50 border-t border-gray-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                            <div
-                                class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center font-bold text-xs"
-                                x-text="user?.username.substring(0,2).toUpperCase()"
-                            ></div>
-                            <div class="flex flex-col">
-                                <span
-                                    class="text-sm font-medium text-gray-200"
-                                    x-text="user?.username"
-                                ></span>
-                                <span
-                                    class="text-xs text-gray-500 capitalize"
-                                    x-text="user?.role"
-                                ></span>
-                            </div>
-                        </div>
-                        <button
-                            @click="logout()"
-                            class="text-gray-500 hover:text-gray-300 transition"
-                        >
-                            <i data-lucide="log-out" class="w-4 h-4"></i>
-                        </button>
-                    </div>
+                <div class="p-4 bg-gray-900 border-t border-gray-800">
                     <button
                         @click="openSettings()"
-                        class="w-full py-1.5 rounded bg-gray-800 border border-gray-600 text-xs text-gray-300 hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                        class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-800 transition group mb-2"
                     >
-                        <i data-lucide="settings" class="w-3 h-3"></i> System
-                        Settings
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xs shadow-lg"
+                            >
+                                <span
+                                    x-text="user?.username.substring(0,2).toUpperCase()"
+                                ></span>
+                            </div>
+                            <div class="text-left">
+                                <div
+                                    class="text-sm font-medium text-gray-200 group-hover:text-white transition"
+                                    x-text="user?.username"
+                                ></div>
+                                <div
+                                    class="text-xs text-gray-500 capitalize"
+                                    x-text="user?.role"
+                                ></div>
+                            </div>
+                        </div>
+                        <i
+                            data-lucide="settings"
+                            class="w-4 h-4 text-gray-500 group-hover:text-gray-300"
+                        ></i>
+                    </button>
+                    <button
+                        @click="logout()"
+                        class="w-full py-2 text-xs font-medium text-gray-500 hover:text-red-400 flex items-center justify-center gap-2 transition border border-gray-800 rounded-lg hover:bg-gray-800 hover:border-red-500/20"
+                    >
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign
+                        Out
                     </button>
                 </div>
             </div>
 
-            <div class="flex-1 flex flex-col min-w-0">
+            <div class="flex-1 flex flex-col min-w-0 bg-gray-950 relative">
                 <div
-                    class="h-16 border-b border-gray-700 flex items-center px-6 bg-gray-800/50 backdrop-blur-sm z-10"
+                    class="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50 backdrop-blur-md z-10 sticky top-0"
                 >
-                    <div class="relative w-full max-w-3xl mx-auto">
+                    <div
+                        class="flex p-1 bg-gray-800 rounded-lg border border-gray-700"
+                    >
+                        <button
+                            @click="setMode('search')"
+                            class="px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2"
+                            :class="mode === 'search' ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'"
+                        >
+                            <i data-lucide="search" class="w-4 h-4"></i> Search
+                        </button>
+                        <button
+                            @click="setMode('agent')"
+                            class="px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-2"
+                            :class="mode === 'agent' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'"
+                        >
+                            <i data-lucide="bot" class="w-4 h-4"></i> Agent
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3 text-sm">
+                        <span class="text-gray-500">Context:</span>
                         <div
-                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                            class="flex items-center gap-2 px-3 py-1.5 bg-gray-900 rounded-full border border-gray-800"
                         >
                             <i
-                                data-lucide="search"
-                                class="text-gray-400 w-5 h-5"
+                                data-lucide="database"
+                                class="w-3.5 h-3.5 text-blue-500"
                             ></i>
-                        </div>
-                        <input
-                            type="text"
-                            x-model="searchQuery"
-                            @keydown.enter="search()"
-                            placeholder="Search your codebase... (Semantic Search)"
-                            class="block w-full pl-10 pr-24 py-2.5 bg-gray-900 border border-gray-600 rounded-lg leading-5 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm transition"
-                        />
-                        <div
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center gap-2"
-                        >
-                            <button
-                                x-show="searchQuery.length > 0"
-                                @click="clearSearch()"
-                                class="text-gray-400 hover:text-gray-200"
-                            >
-                                <i data-lucide="x-circle" class="w-4 h-4"></i>
-                            </button>
+                            <span
+                                x-text="activeRepo ? getActiveRepoName() : 'All Projects'"
+                                class="text-gray-300 font-medium"
+                            ></span>
                         </div>
                     </div>
                 </div>
 
-                <div
-                    class="flex-1 overflow-y-auto p-6 bg-gray-900 scroll-smooth"
-                    id="main-scroll"
-                >
-                    <div
-                        x-show="!hasSearched"
-                        class="h-full flex flex-col items-center justify-center text-gray-500"
-                    >
-                        <i
-                            data-lucide="terminal"
-                            class="w-16 h-16 mb-4 opacity-20"
-                        ></i>
-                        <h3 class="text-lg font-medium text-gray-400">
-                            Ready to search
-                        </h3>
-                        <p class="text-sm mb-4">
-                            <span x-show="activeRepo"
-                                >Searching in
-                                <span
-                                    class="text-blue-400 font-mono"
-                                    x-text="getActiveRepoName()"
-                                ></span
-                            ></span>
-                            <span x-show="!activeRepo"
-                                >Searching across
-                                <span
-                                    class="text-white font-bold"
-                                    x-text="repositories.length"
-                                ></span>
-                                projects</span
-                            >
-                        </p>
-                    </div>
-
-                    <div
-                        x-show="isLoading"
-                        class="flex flex-col items-center justify-center py-20"
-                        x-cloak
-                    >
-                        <div
-                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
-                        ></div>
-                        <p class="mt-4 text-sm text-gray-400 animate-pulse">
-                            Running semantic analysis...
-                        </p>
-                    </div>
-
-                    <div
-                        x-show="hasSearched && !isLoading"
-                        class="max-w-4xl mx-auto space-y-6"
-                        x-cloak
-                    >
-                        <div class="flex items-center justify-between">
-                            <h2
-                                class="text-sm font-semibold text-gray-400 uppercase tracking-wider"
-                            >
-                                Results (<span x-text="results.length"></span>)
-                            </h2>
-                            <div class="flex items-center gap-4">
-                                <button
-                                    @click="exportResults()"
-                                    x-show="results.length > 0"
-                                    class="text-xs text-gray-400 hover:text-blue-400 flex items-center gap-1"
+                <div class="flex-1 overflow-y-auto" id="main-scroll">
+                    <div class="max-w-5xl mx-auto px-6 py-10">
+                        <div class="mb-12 relative">
+                            <div class="relative group">
+                                <div
+                                    class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500"
+                                ></div>
+                                <div
+                                    class="relative bg-gray-900 rounded-xl border border-gray-800 shadow-2xl overflow-hidden"
                                 >
-                                    <i
-                                        data-lucide="download"
-                                        class="w-3 h-3"
-                                    ></i>
-                                    Export
-                                </button>
-                                <span class="text-xs text-gray-500"
-                                    >Sorted by Relevance</span
-                                >
+                                    <div class="flex items-start p-4 gap-4">
+                                        <div class="mt-1">
+                                            <div
+                                                x-show="mode === 'search'"
+                                                class="p-2 bg-gray-800 rounded-lg"
+                                            >
+                                                <i
+                                                    data-lucide="search"
+                                                    class="w-5 h-5 text-gray-400"
+                                                ></i>
+                                            </div>
+                                            <div
+                                                x-show="mode === 'agent'"
+                                                class="p-2 bg-blue-600 rounded-lg"
+                                            >
+                                                <i
+                                                    data-lucide="sparkles"
+                                                    class="w-5 h-5 text-white"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            x-model="query"
+                                            @keydown.enter.prevent="execute()"
+                                            :placeholder="mode === 'search' ? 'Search for code logic, patterns, or errors...' : 'Describe a task (e.g., \'Refactor Auth to use JWT\')...'"
+                                            class="w-full bg-transparent border-none text-lg text-gray-100 placeholder-gray-600 focus:ring-0 resize-none py-2"
+                                            rows="2"
+                                        ></textarea>
+                                        <div class="mt-1">
+                                            <button
+                                                @click="execute()"
+                                                class="p-3 rounded-lg transition-all duration-300"
+                                                :class="query.length > 0 ? 'bg-white text-gray-900 hover:bg-gray-200 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-gray-800 text-gray-500 cursor-not-allowed'"
+                                                :disabled="query.length === 0 || isLoading"
+                                            >
+                                                <i
+                                                    data-lucide="arrow-right"
+                                                    class="w-5 h-5"
+                                                ></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        x-show="mode === 'agent'"
+                                        x-transition
+                                        class="px-4 py-2 bg-gray-950/50 border-t border-gray-800 flex items-center justify-between text-xs"
+                                    >
+                                        <div class="flex gap-4 text-gray-400">
+                                            <label
+                                                class="flex items-center gap-2 cursor-pointer hover:text-gray-200"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    x-model="agentOptions.validation"
+                                                    class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0"
+                                                />
+                                                <span>Enable Reviewer</span>
+                                            </label>
+                                            <label
+                                                class="flex items-center gap-2 cursor-pointer hover:text-gray-200"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    x-model="agentOptions.autoMode"
+                                                    class="rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-0"
+                                                />
+                                                <span>Auto-Complexity</span>
+                                            </label>
+                                        </div>
+                                        <span class="text-blue-500/70 font-mono"
+                                            >Model: GPT-4-Turbo</span
+                                        >
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <template
-                            x-for="result in results"
-                            :key="result.filePath + result.startLine"
+                        <div
+                            x-show="isLoading"
+                            class="flex flex-col items-center justify-center py-12"
+                            x-cloak
                         >
-                            <div
-                                class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-gray-600 transition shadow-sm group"
+                            <div class="relative">
+                                <div
+                                    class="w-16 h-16 border-4 border-gray-800 border-t-blue-500 rounded-full animate-spin"
+                                ></div>
+                                <div
+                                    class="absolute inset-0 flex items-center justify-center"
+                                >
+                                    <i
+                                        data-lucide="cpu"
+                                        class="w-6 h-6 text-gray-600 animate-pulse"
+                                    ></i>
+                                </div>
+                            </div>
+                            <p
+                                class="mt-6 text-gray-400 font-medium animate-pulse"
+                                x-text="loadingText"
+                            ></p>
+                        </div>
+
+                        <div
+                            x-show="mode === 'search' && searchResults.length > 0"
+                            class="space-y-6"
+                            x-cloak
+                        >
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    class="text-sm font-medium text-gray-400 uppercase tracking-wider"
+                                >
+                                    Search Results
+                                </h3>
+                                <span
+                                    class="text-xs px-2 py-1 bg-gray-800 rounded text-gray-400"
+                                    x-text="searchResults.length + ' matches'"
+                                ></span>
+                            </div>
+
+                            <template
+                                x-for="result in searchResults"
+                                :key="result.filePath + result.startLine"
                             >
                                 <div
-                                    class="px-4 py-2 bg-gray-800/50 border-b border-gray-700 flex items-center justify-between"
+                                    class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:border-gray-700 transition group"
                                 >
                                     <div
-                                        class="flex items-center gap-2 overflow-hidden"
+                                        class="px-4 py-3 bg-gray-800/50 border-b border-gray-800 flex items-center justify-between"
                                     >
-                                        <i
-                                            data-lucide="file-code"
-                                            class="w-4 h-4 text-blue-400 flex-shrink-0"
-                                        ></i>
-                                        <span
-                                            class="text-sm font-medium text-blue-300 truncate font-mono"
-                                            x-text="result.filePath"
-                                        ></span>
-                                        <span
-                                            class="text-xs text-gray-500 flex-shrink-0"
-                                            >L<span
-                                                x-text="result.startLine"
-                                            ></span
-                                            >-L<span
-                                                x-text="result.endLine"
-                                            ></span
-                                        ></span>
+                                        <div class="flex items-center gap-3">
+                                            <i
+                                                data-lucide="file-code"
+                                                class="w-4 h-4 text-blue-400"
+                                            ></i>
+                                            <span
+                                                class="text-sm font-medium text-blue-100 font-mono"
+                                                x-text="result.filePath"
+                                            ></span>
+                                            <span
+                                                class="text-xs text-gray-500 font-mono"
+                                                >Lines
+                                                <span
+                                                    x-text="result.startLine"
+                                                ></span
+                                                >-<span
+                                                    x-text="result.endLine"
+                                                ></span
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="text-xs font-mono text-emerald-400"
+                                            x-text="'Score: ' + (result.score * 100).toFixed(0) + '%'"
+                                        ></div>
+                                    </div>
+                                    <div class="p-0 relative bg-[#0d1117]">
+                                        <pre
+                                            class="p-4 text-sm text-gray-300 overflow-x-auto"
+                                        ><code x-text="result.content"></code></pre>
+                                        <button
+                                            @click="copyCode(result.content)"
+                                            class="absolute top-2 right-2 p-2 bg-gray-800 text-gray-400 rounded hover:text-white hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition"
+                                        >
+                                            <i
+                                                data-lucide="copy"
+                                                class="w-4 h-4"
+                                            ></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div
+                            x-show="mode === 'agent' && taskResult"
+                            class="space-y-8 animate-fade-in"
+                            x-cloak
+                        >
+                            <div
+                                class="flex items-center justify-between bg-gray-900 p-4 rounded-xl border border-gray-800"
+                            >
+                                <div>
+                                    <div
+                                        class="text-xs text-gray-500 uppercase font-semibold mb-1"
+                                    >
+                                        Execution Status
                                     </div>
                                     <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                        ></div>
                                         <span
-                                            class="text-xs px-2 py-0.5 rounded bg-blue-900/30 text-blue-300 border border-blue-800"
-                                            x-show="result.score > 0.8"
-                                            >High Match</span
-                                        >
-                                        <span
-                                            class="text-xs text-gray-500"
-                                            x-text="(result.score * 100).toFixed(1) + '%'"
+                                            class="font-medium text-white capitalize"
+                                            x-text="taskResult?.status || 'Completed'"
                                         ></span>
                                     </div>
                                 </div>
+                                <div class="text-right">
+                                    <div
+                                        class="text-xs text-gray-500 uppercase font-semibold mb-1"
+                                    >
+                                        Complexity
+                                    </div>
+                                    <span
+                                        class="px-2.5 py-1 rounded-md text-xs font-bold border"
+                                        :class="{
+                                            'bg-emerald-500/10 text-emerald-400 border-emerald-500/20': taskResult?.complexity === 0,
+                                            'bg-amber-500/10 text-amber-400 border-amber-500/20': taskResult?.complexity === 1,
+                                            'bg-red-500/10 text-red-400 border-red-500/20': taskResult?.complexity === 2
+                                          }"
+                                        x-text="getComplexityLabel(taskResult?.complexity)"
+                                    >
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div
+                                x-show="taskResult?.plan"
+                                class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden"
+                            >
                                 <div
-                                    class="relative bg-[#1e1e1e] p-4 overflow-x-auto code-scroll"
+                                    class="px-4 py-3 border-b border-gray-800 flex items-center gap-2 bg-gray-800/30"
                                 >
-                                    <pre
-                                        class="text-sm font-mono leading-relaxed text-gray-300"
-                                    ><code x-text="result.content"></code></pre>
+                                    <i
+                                        data-lucide="map"
+                                        class="w-4 h-4 text-purple-400"
+                                    ></i>
+                                    <h3
+                                        class="text-sm font-medium text-gray-200"
+                                    >
+                                        Implementation Plan
+                                    </h3>
+                                </div>
+                                <div
+                                    class="p-5 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono"
+                                    x-text="taskResult?.plan"
+                                ></div>
+                            </div>
+
+                            <div
+                                x-show="taskResult?.generatedCode"
+                                class="rounded-xl border border-gray-800 overflow-hidden shadow-2xl"
+                            >
+                                <div
+                                    class="px-4 py-3 bg-gray-900 border-b border-gray-800 flex items-center justify-between"
+                                >
+                                    <div class="flex items-center gap-2">
+                                        <i
+                                            data-lucide="code-2"
+                                            class="w-4 h-4 text-blue-400"
+                                        ></i>
+                                        <h3
+                                            class="text-sm font-medium text-gray-200"
+                                        >
+                                            Generated Solution
+                                        </h3>
+                                    </div>
                                     <button
-                                        @click="copyCode(result.content)"
-                                        class="absolute top-2 right-2 p-1.5 rounded bg-gray-700 text-gray-300 opacity-0 group-hover:opacity-100 transition hover:bg-gray-600 hover:text-white"
-                                        title="Copy code"
+                                        @click="copyCode(taskResult?.generatedCode)"
+                                        class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition"
                                     >
                                         <i
                                             data-lucide="copy"
-                                            class="w-3 h-3"
+                                            class="w-3.5 h-3.5"
                                         ></i>
+                                        Copy
                                     </button>
                                 </div>
+                                <div class="bg-[#0d1117] p-0 overflow-x-auto">
+                                    <pre
+                                        class="p-5 text-sm font-mono text-gray-300 leading-6"
+                                    ><code x-text="taskResult?.generatedCode"></code></pre>
+                                </div>
                             </div>
-                        </template>
+                        </div>
 
                         <div
-                            x-show="results.length === 0"
-                            class="text-center py-12 text-gray-500"
+                            x-show="!isLoading && searchResults.length === 0 && !taskResult"
+                            class="text-center py-20 opacity-50"
                         >
                             <i
-                                data-lucide="search-x"
-                                class="w-12 h-12 mx-auto mb-3 opacity-20"
+                                data-lucide="terminal"
+                                class="w-16 h-16 mx-auto mb-4 text-gray-700"
                             ></i>
-                            <p>No matching code found.</p>
+                            <p class="text-gray-500">Ready for instructions.</p>
                         </div>
                     </div>
                 </div>
@@ -474,45 +644,47 @@
 
         <div
             x-show="showAddModal"
-            class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             x-cloak
         >
             <div
-                class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md overflow-hidden"
+                class="bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl w-full max-w-lg overflow-hidden"
                 @click.away="showAddModal = false"
             >
                 <div class="p-6">
-                    <h3 class="text-xl font-bold mb-1">Add Repository</h3>
-                    <p class="text-sm text-gray-400 mb-6">
-                        Connect a local folder to start indexing.
+                    <h3 class="text-xl font-bold text-white mb-2">
+                        Import Repository
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-6">
+                        Connect a local directory to begin semantic indexing.
                     </p>
 
                     <div class="space-y-4">
                         <div>
                             <label
-                                class="block text-xs font-medium text-gray-400 mb-1 uppercase"
+                                class="block text-xs font-semibold text-gray-500 uppercase mb-1.5"
                                 >Project Name</label
                             >
                             <input
                                 x-model="newRepo.name"
                                 type="text"
-                                placeholder="my-awesome-project"
-                                class="w-full bg-gray-900 border border-gray-600 rounded-lg p-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                                placeholder="e.g., backend-api"
                             />
                         </div>
                         <div>
                             <label
-                                class="block text-xs font-medium text-gray-400 mb-1 uppercase"
-                                >Local Path</label
+                                class="block text-xs font-semibold text-gray-500 uppercase mb-1.5"
+                                >Absolute Path</label
                             >
                             <input
                                 x-model="newRepo.path"
                                 type="text"
-                                placeholder="/path/to/project"
-                                class="w-full bg-gray-900 border border-gray-600 rounded-lg p-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                                placeholder="/home/user/projects/backend"
                             />
-                            <p class="text-xs text-gray-500 mt-1">
-                                Must be an absolute path on the server.
+                            <p class="text-xs text-gray-600 mt-2">
+                                The path must be accessible by the server.
                             </p>
                         </div>
                     </div>
@@ -520,13 +692,13 @@
                     <div class="mt-8 flex justify-end gap-3">
                         <button
                             @click="showAddModal = false"
-                            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 transition"
+                            class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition"
                         >
                             Cancel
                         </button>
                         <button
                             @click="addRepo()"
-                            class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition shadow-lg shadow-blue-900/20"
+                            class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition"
                         >
                             Start Indexing
                         </button>
@@ -537,28 +709,30 @@
 
         <div
             x-show="showSettingsModal"
-            class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             x-cloak
         >
             <div
-                class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-md overflow-hidden"
+                class="bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl w-full max-w-lg overflow-hidden"
                 @click.away="showSettingsModal = false"
             >
                 <div class="p-6">
-                    <h3 class="text-xl font-bold mb-1">System Settings</h3>
-                    <p class="text-sm text-gray-400 mb-6">
-                        Configure LLM and Indexing parameters.
+                    <h3 class="text-xl font-bold text-white mb-2">
+                        System Configuration
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-6">
+                        Manage LLM providers and indexing parameters.
                     </p>
 
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div>
                             <label
-                                class="block text-xs font-medium text-gray-400 mb-1 uppercase"
-                                >Embedding Model</label
+                                class="block text-xs font-semibold text-gray-500 uppercase mb-1.5"
+                                >Embedding Model (Search)</label
                             >
                             <select
                                 x-model="llmSettings.current"
-                                class="w-full bg-gray-900 border border-gray-600 rounded-lg p-2.5 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                class="w-full bg-gray-950 border border-gray-800 rounded-lg p-3 text-white outline-none"
                             >
                                 <template
                                     x-for="model in llmSettings.available"
@@ -571,15 +745,55 @@
                                     ></option>
                                 </template>
                             </select>
-                            <p
-                                class="text-xs text-yellow-500 mt-2 flex items-start gap-1"
+                            <div
+                                class="flex items-start gap-2 mt-2 text-xs text-amber-500/80"
                             >
                                 <i
                                     data-lucide="alert-triangle"
-                                    class="w-3 h-3 mt-0.5"
+                                    class="w-4 h-4 shrink-0"
                                 ></i>
-                                Changing the model will wipe all indices and
-                                require a full re-index of all repositories.
+                                <span
+                                    >Changing this will trigger a full re-index
+                                    of all repositories.</span
+                                >
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-800">
+                            <label
+                                class="block text-xs font-semibold text-gray-500 uppercase mb-3"
+                                >Agent Pipeline Models</label
+                            >
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span
+                                        class="text-xs text-gray-400 block mb-1"
+                                        >Planner (Architect)</span
+                                    >
+                                    <select
+                                        class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-sm text-gray-400 outline-none"
+                                        disabled
+                                    >
+                                        <option>llama3:instruct</option>
+                                        <option>gpt-4</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <span
+                                        class="text-xs text-gray-400 block mb-1"
+                                        >Coder (Developer)</span
+                                    >
+                                    <select
+                                        class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-sm text-gray-400 outline-none"
+                                        disabled
+                                    >
+                                        <option>codellama:latest</option>
+                                        <option>mistral</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-2">
+                                Configured in <code>config.yaml</code>.
                             </p>
                         </div>
                     </div>
@@ -587,13 +801,13 @@
                     <div class="mt-8 flex justify-end gap-3">
                         <button
                             @click="showSettingsModal = false"
-                            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 transition"
+                            class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition"
                         >
                             Cancel
                         </button>
                         <button
                             @click="saveSettings()"
-                            class="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-500 transition shadow-lg shadow-red-900/20"
+                            class="px-5 py-2 rounded-lg text-sm font-medium bg-red-600/90 text-white hover:bg-red-500 shadow-lg shadow-red-900/20 transition"
                         >
                             Apply Changes
                         </button>
@@ -604,68 +818,160 @@
 
         <div
             x-show="showToast"
-            x-transition
-            class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 shadow-lg flex items-center gap-2 z-50"
-            x-cloak
+            x-transition.move.bottom.duration.300ms
+            class="fixed bottom-6 right-6 bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50"
         >
-            <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
-            <span class="text-sm" x-text="toastMessage"></span>
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+            <span class="text-sm font-medium" x-text="toastMessage"></span>
         </div>
 
         <script>
             function app() {
                 return {
-                    // Auth State
+                    // Auth
                     isLoggedIn: !!localStorage.getItem("token"),
-                    authView: "login", // 'login' or 'register'
+                    authView: "login",
                     token: localStorage.getItem("token"),
                     user: JSON.parse(localStorage.getItem("user") || "null"),
                     authForm: { username: "", password: "" },
 
                     // App State
+                    mode: "search", // 'search' | 'agent'
+                    isLoading: false,
+                    loadingText: "Thinking...",
                     showAddModal: false,
                     showSettingsModal: false,
-                    isLoading: false,
-                    hasSearched: false,
-                    searchQuery: "",
+
+                    // Data
                     repositories: [],
-                    results: [],
                     activeRepo: null,
+                    query: "",
+
+                    // Search Results
+                    searchResults: [],
+
+                    // Agent Results
+                    taskResult: null,
+                    agentOptions: { validation: true, autoMode: true },
+
+                    // Forms
                     newRepo: { name: "", path: "" },
                     llmSettings: { current: "", available: [] },
 
-                    // UI Utils
+                    // Utils
                     showToast: false,
                     toastMessage: "",
 
                     init() {
                         this.$watch("isLoggedIn", (val) => {
-                            if (val) {
-                                this.fetchRepos();
-                                this.fetchLlmInfo();
-                                setInterval(() => {
-                                    if (this.isLoggedIn) this.fetchRepos();
-                                }, 5000);
-                            }
+                            if (val) this.refreshData();
                         });
+                        if (this.isLoggedIn) this.refreshData();
 
-                        if (this.isLoggedIn) {
-                            this.fetchRepos();
-                            this.fetchLlmInfo();
-                        }
+                        setInterval(() => {
+                            if (this.isLoggedIn) this.fetchRepos();
+                        }, 5000);
 
-                        setTimeout(() => lucide.createIcons(), 100);
+                        this.$nextTick(() => lucide.createIcons());
                     },
 
-                    // --- Authentication ---
+                    refreshData() {
+                        this.fetchRepos();
+                        this.fetchLlmInfo();
+                    },
+
+                    setMode(m) {
+                        this.mode = m;
+                        this.query = "";
+                        this.searchResults = [];
+                        this.taskResult = null;
+                    },
+
+                    // --- Actions ---
+
+                    async execute() {
+                        if (!this.query.trim()) return;
+                        if (this.mode === "search") {
+                            await this.search();
+                        } else {
+                            await this.executeTask();
+                        }
+                    },
+
+                    async search() {
+                        this.isLoading = true;
+                        this.loadingText = "Scanning vector index...";
+                        this.searchResults = [];
+
+                        const repoFilter = this.activeRepo
+                            ? `, repositoryId: "${this.activeRepo}"`
+                            : "";
+                        const safeQuery = this.query.replace(/"/g, '\\"');
+                        const q = `query { search(query: "${safeQuery}", limit: 20${repoFilter}) { filePath startLine endLine content score } }`;
+
+                        try {
+                            const data = await this.queryGraph(q);
+                            this.searchResults = data.search;
+                        } catch (e) {
+                            console.error(e);
+                            alert("Search error: " + e.message);
+                        } finally {
+                            this.isLoading = false;
+                            this.$nextTick(() => lucide.createIcons());
+                        }
+                    },
+
+                    async executeTask() {
+                        this.isLoading = true;
+                        this.loadingText = "Analyzing complexity & planning...";
+                        this.taskResult = null;
+
+                        // Fallback Project ID if none selected (should ideally require one)
+                        const projectID =
+                            this.activeRepo || this.repositories[0]?.id;
+
+                        if (!projectID) {
+                            alert("Please select a repository first.");
+                            this.isLoading = false;
+                            return;
+                        }
+
+                        const safeQuery = this.query
+                            .replace(/"/g, '\\"')
+                            .replace(/\n/g, "\\n");
+                        const mutation = `
+                            mutation {
+                                executeTask(query: "${safeQuery}", projectID: "${projectID}") {
+                                    executionID
+                                    status
+                                    plan
+                                    generatedCode
+                                    complexity
+                                }
+                            }
+                        `;
+
+                        try {
+                            const data = await this.queryGraph(mutation);
+                            this.taskResult = data.executeTask;
+                        } catch (e) {
+                            console.error(e);
+                            alert("Agent Error: " + e.message);
+                        } finally {
+                            this.isLoading = false;
+                            this.$nextTick(() => lucide.createIcons());
+                        }
+                    },
+
+                    // --- API & Auth (Same as before, streamlined) ---
                     async login() {
                         this.isLoading = true;
                         const q = `mutation { login(username: "${this.authForm.username}", password: "${this.authForm.password}") { token user { id username role } } }`;
                         try {
-                            const data = await this.queryGraph(q, true); // true = skipAuthCheck
-                            this.handleAuthSuccess(data.login);
+                            const data = await this.queryGraph(q, true);
+                            this.handleAuth(data.login);
                         } catch (e) {
-                            alert("Login failed: " + e.message);
+                            alert(e.message);
                         } finally {
                             this.isLoading = false;
                         }
@@ -676,15 +982,15 @@
                         const q = `mutation { register(username: "${this.authForm.username}", password: "${this.authForm.password}") { token user { id username role } } }`;
                         try {
                             const data = await this.queryGraph(q, true);
-                            this.handleAuthSuccess(data.register);
+                            this.handleAuth(data.register);
                         } catch (e) {
-                            alert("Registration failed: " + e.message);
+                            alert(e.message);
                         } finally {
                             this.isLoading = false;
                         }
                     },
 
-                    handleAuthSuccess(payload) {
+                    handleAuth(payload) {
                         this.token = payload.token;
                         this.user = payload.user;
                         localStorage.setItem("token", this.token);
@@ -696,212 +1002,128 @@
                     logout() {
                         this.token = null;
                         this.user = null;
-                        localStorage.removeItem("token");
-                        localStorage.removeItem("user");
+                        localStorage.clear();
                         this.isLoggedIn = false;
                         this.authView = "login";
                     },
 
-                    // --- LLM Settings ---
-                    async fetchLlmInfo() {
-                        const q = `query { llmInfo { currentModel availableModels } }`;
+                    // --- Repos & Settings ---
+                    async fetchRepos() {
                         try {
-                            const data = await this.queryGraph(q);
-                            this.llmSettings.current =
-                                data.llmInfo.currentModel;
-                            this.llmSettings.available =
-                                data.llmInfo.availableModels;
-                        } catch (e) {
-                            console.error(e);
-                        }
+                            const data = await this.queryGraph(
+                                `query { repositories { id name status fileCount } }`,
+                            );
+                            this.repositories = data.repositories;
+                        } catch (e) {}
                     },
 
-                    openSettings() {
-                        this.fetchLlmInfo();
-                        this.showSettingsModal = true;
-                    },
-
-                    async saveSettings() {
-                        if (
-                            !confirm(
-                                "This will clear all existing indices. Continue?",
-                            )
-                        )
-                            return;
-
-                        const m = `mutation { setEmbeddingModel(model: "${this.llmSettings.current}") }`;
+                    async addRepo() {
+                        const m = `mutation { createRepository(name: "${this.newRepo.name}", path: "${this.newRepo.path.replace(/\\/g, "\\\\")}") { id } }`;
                         try {
                             await this.queryGraph(m);
-                            this.toast("Model changed & reindexing started");
-                            this.showSettingsModal = false;
-                            this.repositories = []; // Force refresh UI
+                            this.showAddModal = false;
+                            this.toast("Indexing started");
                             this.fetchRepos();
                         } catch (e) {
                             alert(e.message);
                         }
                     },
 
-                    // --- Core Functions ---
-                    get totalFiles() {
-                        return this.repositories.reduce(
-                            (sum, repo) => sum + repo.fileCount,
-                            0,
+                    async deleteRepo(id) {
+                        if (!confirm("Delete repo?")) return;
+                        await this.queryGraph(
+                            `mutation { deleteRepository(id: "${id}") }`,
+                        );
+                        this.fetchRepos();
+                        this.toast("Deleted");
+                    },
+
+                    async reindexRepo(id) {
+                        try {
+                            await this.queryGraph(
+                                `mutation { reindexRepository(id: "${id}") }`,
+                            );
+                            this.toast("Reindexing...");
+                        } catch (e) {
+                            alert(e.message);
+                        }
+                    },
+
+                    async fetchLlmInfo() {
+                        try {
+                            const data = await this.queryGraph(
+                                `query { llmInfo { currentModel availableModels } }`,
+                            );
+                            this.llmSettings.current =
+                                data.llmInfo.currentModel;
+                            this.llmSettings.available =
+                                data.llmInfo.availableModels;
+                        } catch (e) {}
+                    },
+
+                    async saveSettings() {
+                        if (!confirm("Changing models clears index. Continue?"))
+                            return;
+                        try {
+                            await this.queryGraph(
+                                `mutation { setEmbeddingModel(model: "${this.llmSettings.current}") }`,
+                            );
+                            this.showSettingsModal = false;
+                            this.toast("Settings saved & Reindexing");
+                        } catch (e) {
+                            alert(e.message);
+                        }
+                    },
+
+                    // --- Helpers ---
+                    async queryGraph(query, skipAuth = false) {
+                        const headers = { "Content-Type": "application/json" };
+                        if (this.token)
+                            headers["Authorization"] = `Bearer ${this.token}`;
+                        const res = await fetch("/query", {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({ query }),
+                        });
+                        if (res.status === 401 && !skipAuth) {
+                            this.logout();
+                            throw new Error("Session expired");
+                        }
+                        const json = await res.json();
+                        if (json.errors)
+                            throw new Error(json.errors[0].message);
+                        return json.data;
+                    },
+
+                    copyCode(text) {
+                        navigator.clipboard.writeText(text);
+                        this.toast("Copied to clipboard");
+                    },
+
+                    toast(msg) {
+                        this.toastMessage = msg;
+                        this.showToast = true;
+                        setTimeout(() => (this.showToast = false), 3000);
+                    },
+
+                    getActiveRepoName() {
+                        return (
+                            this.repositories.find(
+                                (r) => r.id === this.activeRepo,
+                            )?.name || ""
                         );
                     },
 
                     selectRepo(id) {
                         this.activeRepo = this.activeRepo === id ? null : id;
-                        if (this.hasSearched && this.searchQuery) {
-                            this.search();
-                        }
                     },
 
-                    getActiveRepoName() {
-                        const repo = this.repositories.find(
-                            (r) => r.id === this.activeRepo,
-                        );
-                        return repo ? repo.name : "";
-                    },
-
-                    clearSearch() {
-                        this.searchQuery = "";
-                        this.hasSearched = false;
-                        this.results = [];
-                    },
-
-                    // --- API Handler ---
-                    async queryGraph(query, skipAuthCheck = false) {
-                        const headers = { "Content-Type": "application/json" };
-                        if (this.token)
-                            headers["Authorization"] = `Bearer ${this.token}`;
-
-                        const res = await fetch("/query", {
-                            method: "POST",
-                            headers: headers,
-                            body: JSON.stringify({ query }),
-                        });
-
-                        // Auth Check
-                        if (res.status === 401 && !skipAuthCheck) {
-                            this.logout();
-                            throw new Error("Session expired");
-                        }
-
-                        const json = await res.json();
-                        if (json.errors) {
-                            console.error(json.errors);
-                            throw new Error(json.errors[0].message);
-                        }
-                        return json.data;
-                    },
-
-                    // --- Repository Actions ---
-                    async fetchRepos() {
-                        if (!this.isLoggedIn) return;
-                        const q = `query { repositories { id name status fileCount path } }`;
-                        try {
-                            const data = await this.queryGraph(q);
-                            this.repositories = data.repositories;
-                            this.$nextTick(() => lucide.createIcons());
-                        } catch (e) {
-                            console.error("Repo fetch failed", e);
-                        }
-                    },
-
-                    async addRepo() {
-                        if (!this.newRepo.name || !this.newRepo.path) return;
-                        const mutation = `mutation { createRepository(name: "${this.newRepo.name}", path: "${this.newRepo.path.replace(/\\/g, "\\\\")}") { id } }`;
-                        try {
-                            await this.queryGraph(mutation);
-                            this.showAddModal = false;
-                            this.newRepo = { name: "", path: "" };
-                            this.fetchRepos();
-                            this.toast("Repository added successfully");
-                        } catch (e) {
-                            alert("Error: " + e.message);
-                        }
-                    },
-
-                    async deleteRepo(id) {
-                        if (!confirm("Delete this repository index?")) return;
-                        const mutation = `mutation { deleteRepository(id: "${id}") }`;
-                        await this.queryGraph(mutation);
-                        if (this.activeRepo === id) this.activeRepo = null;
-                        this.fetchRepos();
-                        this.toast("Repository deleted");
-                    },
-
-                    async reindexRepo(id) {
-                        const mutation = `mutation { reindexRepository(id: "${id}") }`;
-                        try {
-                            await this.queryGraph(mutation);
-                            this.fetchRepos();
-                            this.toast("Reindexing started...");
-                        } catch (e) {
-                            alert("Reindex failed: " + e.message);
-                        }
-                    },
-
-                    // --- Search ---
-                    async search() {
-                        if (!this.searchQuery.trim()) return;
-                        this.isLoading = true;
-                        this.hasSearched = true;
-                        this.results = [];
-
-                        const safeQuery = this.searchQuery.replace(/"/g, '\\"');
-                        const repoFilter = this.activeRepo
-                            ? `, repositoryId: "${this.activeRepo}"`
-                            : "";
-
-                        const q = `query {
-                            search(query: "${safeQuery}", limit: 20${repoFilter}) {
-                                filePath startLine endLine content score signature
-                            }
-                        }`;
-
-                        try {
-                            const data = await this.queryGraph(q);
-                            this.results = data.search;
-                            document.getElementById("main-scroll").scrollTop =
-                                0;
-                        } catch (e) {
-                            console.error(e);
-                        } finally {
-                            this.isLoading = false;
-                            this.$nextTick(() => lucide.createIcons());
-                        }
-                    },
-
-                    copyCode(text) {
-                        navigator.clipboard.writeText(text);
-                        this.toast("Code copied to clipboard");
-                    },
-
-                    exportResults() {
-                        const data = this.results.map((r) => ({
-                            file: r.filePath,
-                            lines: `${r.startLine}-${r.endLine}`,
-                            score: r.score,
-                            content: r.content,
-                        }));
-                        const blob = new Blob([JSON.stringify(data, null, 2)], {
-                            type: "application/json",
-                        });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `search-results-${Date.now()}.json`;
-                        a.click();
-                        this.toast("Results exported");
-                    },
-
-                    toast(message) {
-                        this.toastMessage = message;
-                        this.showToast = true;
-                        setTimeout(() => {
-                            this.showToast = false;
-                        }, 3000);
+                    getComplexityLabel(c) {
+                        return c === 0
+                            ? "Simple"
+                            : c === 1
+                              ? "Medium"
+                              : "Complex";
                     },
                 };
             }

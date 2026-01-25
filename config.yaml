@@ -26,6 +26,11 @@ llm:
   embedding_model: "nomic-embed-text"
   timeout: 60s
 
+  agent:
+    planner_model: "deepseek-r1:14b"
+    coder_model: "qwen2.5-coder:14b"
+    fallback_model: "qwen2.5-coder:14b"
+
 indexer:
   supported_extensions:
     go: go

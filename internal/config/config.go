@@ -67,6 +67,7 @@ type LLMConfig struct {
 	Host           string        `mapstructure:"host" validate:"required,url"`
 	EmbeddingModel string        `mapstructure:"embedding_model" validate:"required"`
 	Timeout        time.Duration `mapstructure:"timeout"`
+	Agent          AgentConfig   `mapstructure:"agent"`
 }
 
 type SearchConfig struct {
@@ -106,6 +107,12 @@ type CacheConfig struct {
 	TTL      time.Duration `mapstructure:"ttl"`
 }
 
+type AgentConfig struct {
+	PlannerModel  string `mapstructure:"planner_model"`
+	CoderModel    string `mapstructure:"coder_model"`
+	FallbackModel string `mapstructure:"fallback_model"`
+}
+
 // NewDefault erstellt Defaults
 func NewDefault() *Config {
 	return &Config{
@@ -123,6 +130,11 @@ func NewDefault() *Config {
 			Host:           "http://localhost:11434",
 			EmbeddingModel: "nomic-embed-text",
 			Timeout:        60 * time.Second,
+			Agent: AgentConfig{
+				PlannerModel: "deepseek-r1:14b",
+				CoderModel: "qwen2.5-coder:14b",
+				FallbackModel: "qwen2.5-coder:14b",
+			},
 		},
 		Indexer: IndexerConfig{
 			SupportedExts: map[string]string{
@@ -144,7 +156,6 @@ func NewDefault() *Config {
 			MaxIdleConns:    5,
 			ConnMaxLifetime: 15 * time.Minute,
 		},
-		// NEU: Defaults für Weaviate
 		VectorDB: VectorDBConfig{
 			Host:      "localhost:8090",
 			Scheme:    "http",
