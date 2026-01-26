@@ -63,7 +63,7 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 	}
 
 	if err := unzip(tempFile, header.Size, targetDir); err != nil {
-		os.RemoveAll(targetDir)
+		_ = os.RemoveAll(targetDir)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unzip: " + err.Error()})
 		return
 	}
@@ -75,7 +75,7 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 
 	repo, err := h.repoService.Create(c.Request.Context(), projectName, targetDir, true)
 	if err != nil {
-		os.RemoveAll(targetDir)
+		_ = os.RemoveAll(targetDir)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -92,6 +92,7 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 	}
 
 	for _, f := range reader.File {
+		//nolint:gosec // G305: Path traversal is checked explicitly in the next line
 		fpath := filepath.Join(dest, f.Name)
 
 		if !strings.HasPrefix(fpath, dest+string(os.PathSeparator)) {
@@ -120,15 +121,12 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 			return err
 		}
 
-		// G110:
-		// Wir prüfen 'written' und echte Fehler.
-		// CopyN liefert nil bei Erfolg (Limit erreicht) oder EOF (Datei fertig).
 		written, err := io.CopyN(outFile, rc, MaxUnzipSize)
 
 		if written >= MaxUnzipSize {
 			_ = outFile.Close()
 			_ = rc.Close()
-			return fmt.Errorf("file %s too large (decompression bomb protection)", f.Name)
+			return fmt.Errorf("file %s too large (decompression protection)", f.Name)
 		}
 
 		if err != nil && err != io.EOF {

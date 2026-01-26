@@ -1,0 +1,12 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - gosec # Sicherheits-Checks (WICHTIG!)
+    - errcheck # Prüft auf ignorierte Fehler
+    - gosimple # Code Vereinfachung
+    - govet # Go Standard Vet
+    - ineffassign # Unnötige Zuweisungen
+    - staticcheck # Statische Analyse
+    - unused # Ungenutzter Code

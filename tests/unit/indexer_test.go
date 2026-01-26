@@ -25,19 +25,21 @@ func TestIndexer_GitIgnore(t *testing.T) {
 	// secret.key
 	// vendor/lib.go
 
-	err = os.WriteFile(filepath.Join(tmpDir, ".gitignore"), []byte("secret.key\nvendor/"), 0644)
+	// G306: Permissions 0600 statt 0644
+	err = os.WriteFile(filepath.Join(tmpDir, ".gitignore"), []byte("secret.key\nvendor/"), 0600)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main"), 0644)
+	err = os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main"), 0600)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join(tmpDir, "secret.key"), []byte("secret"), 0644)
+	err = os.WriteFile(filepath.Join(tmpDir, "secret.key"), []byte("secret"), 0600)
 	require.NoError(t, err)
 
-	err = os.Mkdir(filepath.Join(tmpDir, "vendor"), 0755)
+	// G301: Permissions 0750 statt 0755
+	err = os.Mkdir(filepath.Join(tmpDir, "vendor"), 0750)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join(tmpDir, "vendor/lib.go"), []byte("package lib"), 0644)
+	err = os.WriteFile(filepath.Join(tmpDir, "vendor/lib.go"), []byte("package lib"), 0600)
 	require.NoError(t, err)
 
 	// 3. Init Indexer

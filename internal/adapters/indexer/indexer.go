@@ -49,7 +49,7 @@ func (idx *Indexer) DeleteAllIndices(ctx context.Context) error {
 
 func (idx *Indexer) loadGitIgnore(rootPath string) {
 	idx.ignorePatterns = []string{}
-	// G304: Clean path
+	// G304: Path Clean
 	safePath := filepath.Clean(filepath.Join(rootPath, ".gitignore"))
 	file, err := os.Open(safePath)
 	if err != nil {
@@ -137,7 +137,8 @@ func (idx *Indexer) processFile(ctx context.Context, repoID uuid.UUID, path stri
 	}
 
 	p := parser.GetParser(lang)
-	// G304: Path traversal protection
+
+	// G304: Path Clean
 	safePath := filepath.Clean(path)
 	content, err := os.ReadFile(safePath)
 	if err != nil {

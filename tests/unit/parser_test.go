@@ -30,7 +30,7 @@ func TestGoParser_Parse(t *testing.T) {
 	`
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "main.go")
-	err := os.WriteFile(path, []byte(content), 0644)
+	err := os.WriteFile(path, []byte(content), 0600)
 	require.NoError(t, err)
 
 	// Execute
