@@ -331,7 +331,8 @@ func (s *WeaviateVectorStore) DeleteByRepoID(ctx context.Context, repoID uuid.UU
 		return fmt.Errorf("repo_id cannot be nil")
 	}
 
-	result, err := s.client.Batch().ObjectsBatchDeleter().
+	// Linter Fix: "result" Variable entfernt, da sie nicht genutzt wurde
+	_, err := s.client.Batch().ObjectsBatchDeleter().
 		WithClassName(s.indexName).
 		WithOutput("verbose").
 		WithWhere(filters.Where().
