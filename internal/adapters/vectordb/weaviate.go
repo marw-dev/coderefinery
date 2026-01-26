@@ -344,11 +344,6 @@ func (s *WeaviateVectorStore) DeleteByRepoID(ctx context.Context, repoID uuid.UU
 		return fmt.Errorf("delete operation failed: %w", err)
 	}
 
-	// Optional: Log wie viele Objekte gelöscht wurden
-	if result != nil && result.Results != nil {
-		// Weaviate gibt Details über gelöschte Objekte zurück
-	}
-
 	return nil
 }
 
@@ -469,8 +464,8 @@ func (s *WeaviateVectorStore) GetStats(ctx context.Context) (map[string]interfac
 		return nil, fmt.Errorf("failed to get stats: %w", err)
 	}
 
-	// KORREKTUR: Explizite Konvertierung von map[string]models.JSONObject zu map[string]interface{}
-	result := make(map[string]any)
+	// Map conversion von models.JSONObject zu map[string]interface{}
+	result := make(map[string]interface{})
 	for k, v := range resp.Data {
 		result[k] = v
 	}
