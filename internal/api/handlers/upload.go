@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,7 +24,6 @@ type UploadHandler struct {
 }
 
 func NewUploadHandler(service *services.RepositoryService, uploadDir string) *UploadHandler {
-	// G301: Berechtigungen einschränken (0750)
 	if err := os.MkdirAll(uploadDir, 0750); err != nil {
 		fmt.Printf("Warning: Could not create upload dir: %v\n", err)
 	}
@@ -94,14 +92,13 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 	}
 
 	for _, f := range reader.File {
-		// G305: Zip Slip Protection
 		fpath := filepath.Join(dest, f.Name)
+
 		if !strings.HasPrefix(fpath, dest+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path: %s", fpath)
 		}
 
 		if f.FileInfo().IsDir() {
-			// G301: Berechtigungen einschränken (0750)
 			if err := os.MkdirAll(fpath, 0750); err != nil {
 				return err
 			}
@@ -112,7 +109,6 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 			return err
 		}
 
-		// G304: Path traversal is mitigated by the prefix check above and Clean
 		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return err
@@ -120,29 +116,27 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 
 		rc, err := f.Open()
 		if err != nil {
-			_ = outFile.Close() // G104
+			_ = outFile.Close()
 			return err
 		}
 
-		// G110
-		// Wir nutzen io.CopyN (via LimitReader Logik) um nicht unendlich viel zu schreiben
+		// G110:
+		// Wir prüfen 'written' und echte Fehler.
+		// CopyN liefert nil bei Erfolg (Limit erreicht) oder EOF (Datei fertig).
 		written, err := io.CopyN(outFile, rc, MaxUnzipSize)
-		if err != nil {
-			if err == io.EOF {
-				// EOF ist okay, File war kleiner als Limit
-				err = nil
-			} else if written >= MaxUnzipSize {
-				_ = outFile.Close()
-				_ = rc.Close()
-				return fmt.Errorf("file %s too large (decompression bomb protection)", f.Name)
-			} else {
-				_ = outFile.Close()
-				_ = rc.Close()
-				return err
-			}
+
+		if written >= MaxUnzipSize {
+			_ = outFile.Close()
+			_ = rc.Close()
+			return fmt.Errorf("file %s too large (decompression bomb protection)", f.Name)
 		}
 
-		// G104: Handle Close errors
+		if err != nil && err != io.EOF {
+			_ = outFile.Close()
+			_ = rc.Close()
+			return err
+		}
+
 		if err := outFile.Close(); err != nil {
 			_ = rc.Close()
 			return err
@@ -150,15 +144,4 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 		_ = rc.Close()
 	}
 	return nil
-}
-
-// safeInt32 konvertiert int sicher zu int32 (G115 Mitigation)
-func safeInt32(n int) int32 {
-	if n > math.MaxInt32 {
-		return math.MaxInt32
-	}
-	if n < math.MinInt32 {
-		return math.MinInt32
-	}
-	return int32(n)
 }
