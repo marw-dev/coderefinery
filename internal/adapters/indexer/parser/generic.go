@@ -8,12 +8,9 @@ import (
 	"coderefinery/internal/core/domain"
 )
 
-type GenericParser struct {
-	minChunkSize int
-	maxChunkSize int
-}
 
-func (p *GenericParser) Parse(filePath string, content []byte, modTime time.Time) ([]domain.CodeChunk, error) {
+
+func Parse(filePath string, content []byte, modTime time.Time) ([]domain.CodeChunk, error) {
 	lines := strings.Split(string(content), "\n")
 	var chunks []domain.CodeChunk
 
@@ -23,6 +20,7 @@ func (p *GenericParser) Parse(filePath string, content []byte, modTime time.Time
 	for i, line := range lines {
 		currentChunk.WriteString(line + "\n")
 
+		// Verwendung von Literalen
 		if currentChunk.Len() > 1500 || i == len(lines)-1 {
 			if currentChunk.Len() > 50 {
 				ext := filepath.Ext(filePath)
@@ -47,6 +45,6 @@ func (p *GenericParser) Parse(filePath string, content []byte, modTime time.Time
 	return chunks, nil
 }
 
-func (p *GenericParser) SupportsLanguage(lang string) bool {
+func SupportsLanguage(lang string) bool {
 	return true
 }
