@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"net/http"
 
 	"coderefinery/graph"
 	"coderefinery/internal/adapters/indexer"
 	"coderefinery/internal/adapters/vectordb"
 
 	storagePG "coderefinery/internal/adapters/storage/postgres"
+	storageWeaviate "coderefinery/internal/adapters/storage/weaviate"
 
 	"coderefinery/internal/config"
 	"coderefinery/internal/core/services"
@@ -27,6 +29,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
+	"github.com/weaviate/weaviate-go-client/v4/weaviate"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -63,28 +66,51 @@ func main() {
 		}
 	}()
 
-	// 3. Relationale Datenbank (Postgres) für Metadaten & Auth
-	log.Info().Str("source", cfg.Database.Source).Msg("Connecting to metadata database (Postgres)")
+	// 3. Relationale Datenbank (Postgres)
+	log.Info().Str("source", cfg.Database.Source).Msg("Connecting to auth database (Postgres)")
 	db, err := sqlx.Connect("pgx", cfg.Database.Source)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to open metadata db")
+		log.Fatal().Err(err).Msg("Failed to open auth db")
 	}
 	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 	defer db.Close()
 
-	// 4. Vector Datenbank (Weaviate) für Code & Suche
-	log.Info().Str("host", cfg.VectorDB.Host).Msg("Connecting to vector database (Weaviate)")
-	vectorStore, err := vectordb.NewWeaviateVectorStore(cfg.VectorDB)
+	// 4. Vector Datenbank (Weaviate) Setup
+
+	// A) Weaviate Client initialisieren
+	log.Info().Str("host", cfg.VectorDB.Host).Msg("Connecting to Weaviate")
+
+	wCfg := weaviate.Config{
+		Host:   cfg.VectorDB.Host,
+		Scheme: cfg.VectorDB.Scheme,
+		ConnectionClient: &http.Client{
+			Timeout: cfg.VectorDB.Timeout,
+		},
+	}
+
+	weaviateClient, err := weaviate.NewClient(wCfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create Weaviate client")
+	}
+
+	// B) Vector Store initialisieren (für Code Chunks)
+	vectorStore, err := vectordb.NewWeaviateVectorStore(weaviateClient, cfg.VectorDB.IndexName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to init vector store")
 	}
 
 	// 5. Adapter & Services initialisieren
 
-	// Stores (SQL)
-	repoStore := storagePG.NewRepoStore(db)
+	// Stores
+	// RepoStore nutzt jetzt Weaviate für Metadaten
+	repoStore, err := storageWeaviate.NewRepoStore(weaviateClient)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to init weaviate repo store")
+	}
+
+	// UserStore bleibt bei Postgres (Auth)
 	userStore := storagePG.NewUserStore(db)
 
 	// Embedder (Ollama)
@@ -93,7 +119,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to create embedder")
 	}
 
-	// Indexer (nutzt jetzt VectorStore statt SQL DB)
+	// Indexer
 	idx, err := indexer.NewIndexer(cfg.Indexer, embedder, vectorStore)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to init indexer")
@@ -102,7 +128,7 @@ func main() {
 	// Core Services
 	repoService := services.NewRepositoryService(repoStore, idx)
 
-	// Searcher (nutzt jetzt VectorStore)
+	// Searcher
 	searcher := search.NewSearcher(vectorStore, embedder, cacheService)
 
 	// Auth
@@ -146,7 +172,7 @@ func main() {
 		c.JSON(200, gin.H{
 			"status": "up",
 			"env":    cfg.Environment,
-			"mode":   "hybrid (postgres + weaviate)",
+			"mode":   "hybrid (auth=pg, repos=weaviate)",
 		})
 	})
 

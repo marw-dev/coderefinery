@@ -3,16 +3,17 @@ package integration
 import (
 	"context"
 	"math/rand"
+	"net/http"
 	"testing"
 	"time"
 
 	"coderefinery/internal/adapters/vectordb"
-	"coderefinery/internal/config"
 	"coderefinery/internal/core/domain"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/weaviate/weaviate-go-client/v4/weaviate"
 )
 
 // Helper: Creates random []float32 with normalized values (mostly)
@@ -27,15 +28,27 @@ func randomEmbedding() []float32 {
 func TestVectorSearch_Integration(t *testing.T) {
 	// 1. Setup: Verbindung zu Weaviate herstellen
 	// Wir nutzen hier Hardcoded Ports passend zur docker-compose Umgebung
-	cfg := config.VectorDBConfig{
-		Host:      "localhost:8090", // Port aus docker-compose für Weaviate
-		Scheme:    "http",
-		IndexName: "TestCodeChunk", // Eigener Index-Name für Tests, um Prod-Daten nicht zu stören
-		Timeout:   5 * time.Second,
+	wCfg := weaviate.Config{
+		Host:   "localhost:8090", // Port aus docker-compose
+		Scheme: "http",
+		ConnectionClient: &http.Client{
+			Timeout: 5 * time.Second,
+		},
 	}
 
-	store, err := vectordb.NewWeaviateVectorStore(cfg)
-	require.NoError(t, err, "Failed to connect to Weaviate. Is docker-compose running?")
+	client, err := weaviate.NewClient(wCfg)
+	require.NoError(t, err, "Failed to create Weaviate client")
+
+	// Prüfen ob Weaviate erreichbar ist (optional, aber hilfreich)
+	ready, err := client.Misc().ReadyChecker().Do(context.Background())
+	require.NoError(t, err, "Weaviate is not reachable. Is docker-compose running?")
+	require.True(t, ready, "Weaviate is not ready")
+
+	indexName := "TestCodeChunk"
+
+	// Store initialisieren (Hier hat sich die Signatur geändert: Client + IndexName)
+	store, err := vectordb.NewWeaviateVectorStore(client, indexName)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	repoID := uuid.New()
@@ -44,6 +57,7 @@ func TestVectorSearch_Integration(t *testing.T) {
 	// Cleanup vor dem Test (falls alte Daten existieren) und danach
 	_ = store.DeleteByRepoID(ctx, repoID)
 	_ = store.DeleteByRepoID(ctx, otherRepoID)
+	// Optional: Wir könnten hier auch das Schema droppen, aber DeleteByRepoID reicht meist
 	defer func() {
 		_ = store.DeleteByRepoID(ctx, repoID)
 		_ = store.DeleteByRepoID(ctx, otherRepoID)
@@ -85,6 +99,7 @@ func TestVectorSearch_Integration(t *testing.T) {
 	// Sollte beide finden, da Vektoren identisch sind
 	results, err := store.SearchSimilar(ctx, targetVec, 10, 0.5, nil)
 	require.NoError(t, err)
+	// Wir erwarten >= 2, falls noch Daten von anderen Tests da sind, aber mind. unsere 2
 	assert.GreaterOrEqual(t, len(results), 2, "Should find vectors from both repos without filter")
 
 	// 5. Test Case B: Suche MIT Repo-Filter
@@ -104,7 +119,9 @@ func TestVectorSearch_Integration(t *testing.T) {
 
 	// 6. Test Case C: Score Prüfung
 	// Da wir exakt denselben Vektor suchen, sollte Score sehr hoch sein (nahe 1.0)
-	assert.Greater(t, resultsFiltered[0].SemanticScore, 0.9, "Exact vector match should have high score")
+	if len(resultsFiltered) > 0 {
+		assert.Greater(t, resultsFiltered[0].SemanticScore, 0.9, "Exact vector match should have high score")
+	}
 
 	// 7. Cleanup Test (DeleteByRepoID)
 	err = store.DeleteByRepoID(ctx, repoID)

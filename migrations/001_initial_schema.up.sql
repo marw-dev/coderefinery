@@ -8,19 +8,3 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-
-CREATE TABLE IF NOT EXISTS repositories (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    repository_url VARCHAR(512) NOT NULL,
-    is_managed BOOLEAN DEFAULT FALSE
-    owner_id UUID NOT NULL,
-    settings JSONB NOT NULL DEFAULT '{}',
-    status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT unq_repo_owner_name UNIQUE (owner_id, name)
-);
-
-CREATE INDEX IF NOT EXISTS idx_repos_owner ON repositories(owner_id);

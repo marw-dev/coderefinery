@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"coderefinery/internal/core/services"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -33,41 +34,55 @@ func NewUploadHandler(service *services.RepositoryService, uploadDir string) *Up
 
 // HandleUpload verarbeitet den POST Request
 func (h *UploadHandler) HandleUpload(c *gin.Context) {
-	// 1. Multipart Form parsen (Max 50MB)
-    // Gin macht das oft automatisch, aber wir setzen hier explizit Grenzen via Config im Main
+	// 1. Multipart Form parsen
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded or file too big"})
 		return
 	}
-    defer file.Close()
+	defer file.Close()
 
-    // Validierung: Muss ZIP sein
-    if !strings.HasSuffix(strings.ToLower(header.Filename), ".zip") {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Only .zip files are allowed"})
-        return
-    }
+	// Validierung: Muss ZIP sein
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".zip") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Only .zip files are allowed"})
+		return
+	}
 
 	// 2. Zielpfad vorbereiten
 	projectID := uuid.New()
 	targetDir := filepath.Join(h.uploadDir, projectID.String())
 
-	// 3. Entpacken
-	if err := unzip(file, header.Size, targetDir); err != nil {
-        // Aufräumen falls halb entpackt
-        os.RemoveAll(targetDir)
+	// Datei in eine temporäre Datei kopieren, um ReaderAt sicherzustellen
+	tempFile, err := os.CreateTemp("", "upload-*.zip")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp file"})
+		return
+	}
+	// Aufräumen: Temp-Datei schließen und löschen am Ende
+	defer os.Remove(tempFile.Name())
+	defer tempFile.Close()
+
+	// Inhalt kopieren
+	if _, err := io.Copy(tempFile, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save temp file"})
+		return
+	}
+
+	// 3. Entpacken (jetzt mit tempFile statt file)
+	// Wir nutzen header.Size, da dies die erwartete Größe ist
+	if err := unzip(tempFile, header.Size, targetDir); err != nil {
+		// Aufräumen falls halb entpackt
+		os.RemoveAll(targetDir)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unzip: " + err.Error()})
 		return
 	}
 
 	// 4. Repo erstellen
-    // Name aus Dateiname ableiten (projekt.zip -> projekt)
 	projectName := c.PostForm("name")
-    if projectName == "" {
-        projectName = strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename))
-    }
+	if projectName == "" {
+		projectName = strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename))
+	}
 
-    // Aufruf mit isManaged = true
 	repo, err := h.repoService.Create(c.Request.Context(), projectName, targetDir, true)
 	if err != nil {
 		os.RemoveAll(targetDir)
