@@ -10,3 +10,10 @@ linters:
     - ineffassign # Unnötige Zuweisungen
     - staticcheck # Statische Analyse
     - unused # Ungenutzter Code
+
+issues:
+  exclude-rules:
+    - path: graph/generated\.go
+      linters:
+        - gosec
+      text: "G115"
