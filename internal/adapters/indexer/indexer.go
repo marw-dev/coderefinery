@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"coderefinery/internal/adapters/indexer/parser"
 	"coderefinery/internal/config"
@@ -21,7 +20,6 @@ type Indexer struct {
 	cfg            config.IndexerConfig
 	embedder       ports.Embedder
 	vectorStore    ports.VectorStore
-	mu             sync.RWMutex
 	ignorePatterns []string
 }
 
@@ -36,7 +34,6 @@ func NewIndexer(cfg config.IndexerConfig, embedder ports.Embedder, vectorStore p
 
 func (idx *Indexer) Index(ctx context.Context, repo *domain.Repository) error {
 	log.Printf("Indexing repository: %s", repo.Name)
-	// Wir nutzen repo.ID, um die Chunks zuzuordnen
 	return idx.buildIndexInternal(ctx, repo.ID, repo.Path)
 }
 
@@ -47,13 +44,8 @@ func (idx *Indexer) DeleteIndex(ctx context.Context, repo *domain.Repository) er
 
 func (idx *Indexer) DeleteAllIndices(ctx context.Context) error {
 	log.Println("WARNING: Deleting ALL search indices (not implemented via vectorStore, doing nothing safely or use specific cleanup logic)")
-	// In einer reinen VectorStore Umgebung ohne "DeleteAll" Methode im Interface
-	// müssten wir hier iterieren oder das Interface erweitern.
-	// Für jetzt lassen wir es sicherheitshalber leer oder loggen eine Warnung.
 	return nil
 }
-
-// --- Interne Logik ---
 
 func (idx *Indexer) loadGitIgnore(rootPath string) {
 	idx.ignorePatterns = []string{}
@@ -106,10 +98,6 @@ func (idx *Indexer) buildIndexInternal(ctx context.Context, repoID uuid.UUID, ro
 		if strings.Contains(path, ".git") {
 			return nil
 		}
-
-		// Früher: Check gegen DB LastModified (idx.db.GetFileModTime).
-		// Jetzt: Wir indexieren vorerst immer alles (Full Sync),
-		// da wir den State in Weaviate noch nicht effizient abfragen.
 		filesToProcess = append(filesToProcess, path)
 		return nil
 	})
@@ -138,8 +126,8 @@ func (idx *Indexer) processFile(ctx context.Context, repoID uuid.UUID, path stri
 		return err
 	}
 
-	ext := strings.ToLower(filepath.Ext(path)) // z.B. ".go"
-	extKey := strings.TrimPrefix(ext, ".")     // z.B. "go"
+	ext := strings.ToLower(filepath.Ext(path))
+	extKey := strings.TrimPrefix(ext, ".")
 
 	lang, known := idx.cfg.SupportedExts[extKey]
 	if !known {
@@ -163,24 +151,20 @@ func (idx *Indexer) processFile(ctx context.Context, repoID uuid.UUID, path stri
 
 	texts := make([]string, len(chunks))
 	for i, c := range chunks {
-		// Wir kombinieren Signatur und Content für das Embedding
 		text := c.Signature + "\n" + c.Comments + "\n" + c.Content
 		texts[i] = text
 	}
 
-	// Embeddings via Ollama generieren
 	embeddings, err := idx.embedder.EmbedBatch(ctx, texts)
 	if err != nil {
 		return err
 	}
 
-	// Chunks mit Daten anreichern
 	for i := range chunks {
 		chunks[i].Embedding = embeddings[i]
-		chunks[i].RepoID = repoID // WICHTIG: Link zum Repo setzen!
+		chunks[i].RepoID = repoID
 		chunks[i].Language = lang
 	}
 
-	// Speichern in Weaviate (Batch Upsert)
 	return idx.vectorStore.BatchUpsert(ctx, chunks)
 }

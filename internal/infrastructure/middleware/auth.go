@@ -12,18 +12,24 @@ import (
 	"github.com/google/uuid"
 )
 
+// Define custom context keys to avoid collisions (SA1029)
+type contextKey string
+
+const (
+	userIDKey contextKey = "userID"
+	roleKey   contextKey = "role"
+)
+
 // AuthMiddleware prüft JWT Tokens und setzt den User in den Context
 func AuthMiddleware(jwtService *auth.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 
-		// Kein Header? -> Request durchlassen (Guest), aber kein User im Context
 		if authHeader == "" {
 			c.Next()
 			return
 		}
 
-		// Header Format prüfen: "Bearer <token>"
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
@@ -33,7 +39,6 @@ func AuthMiddleware(jwtService *auth.JWTService) gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		// Token validieren
 		claims, err := jwtService.ValidateToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
@@ -41,19 +46,15 @@ func AuthMiddleware(jwtService *auth.JWTService) gin.HandlerFunc {
 			return
 		}
 
-		// Parse UUID aus Claims (falls es dort als String vorliegt, sonst direkter Cast)
-		// Wir gehen davon aus, dass claims.UserID bereits uuid.UUID ist (gemäß jwt.go).
-		// Falls nicht, müsste hier uuid.Parse(claims.UserID) stehen.
 		userID := claims.UserID
 
-		// 1. User in den Gin-Context setzen (für REST Handler)
+		// 1. Gin Context (String keys sind hier okay)
 		c.Set("userID", userID)
 		c.Set("role", claims.Role)
 
-		// 2. User in den Standard Go Context setzen (WICHTIG für GraphQL Resolver!)
-		// Wir nutzen hier Strings als Key der Einfachheit halber.
-		ctx := context.WithValue(c.Request.Context(), "userID", userID)
-		ctx = context.WithValue(ctx, "role", claims.Role)
+		// 2. Standard Go Context (Typed keys verwenden)
+		ctx := context.WithValue(c.Request.Context(), userIDKey, userID)
+		ctx = context.WithValue(ctx, roleKey, claims.Role)
 
 		c.Request = c.Request.WithContext(ctx)
 
@@ -61,9 +62,9 @@ func AuthMiddleware(jwtService *auth.JWTService) gin.HandlerFunc {
 	}
 }
 
-// GetUserIDFromContext extrahiert die UserID aus dem Kontext (für GraphQL Resolver)
+// GetUserIDFromContext extrahiert die UserID aus dem Kontext
 func GetUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
-	val := ctx.Value("userID")
+	val := ctx.Value(userIDKey)
 	if val == nil {
 		return uuid.Nil, errors.New("no user in context")
 	}
@@ -76,9 +77,9 @@ func GetUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	return id, nil
 }
 
-// GetUserRoleFromContext extrahiert die Rolle (Optional, für spätere Checks)
+// GetUserRoleFromContext extrahiert die Rolle
 func GetUserRoleFromContext(ctx context.Context) (string, error) {
-	val := ctx.Value("role")
+	val := ctx.Value(roleKey)
 	if val == nil {
 		return "", errors.New("no role in context")
 	}

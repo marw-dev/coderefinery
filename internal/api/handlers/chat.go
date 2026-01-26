@@ -12,7 +12,6 @@ type ChatHandler struct {
 	config *config.Config
 }
 
-// NewChatHandler erstellt den Handler mit den Abhängigkeiten
 func NewChatHandler(agent *agent.AgentService, config *config.Config) *ChatHandler {
 	return &ChatHandler{
 		agent:  agent,
@@ -37,8 +36,6 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Defaults aus der globalen Config laden
-	// Falls in der Config nichts steht (z.B. alte Config), setzen wir Fallbacks.
 	plannerModel := h.config.LLM.Agent.PlannerModel
 	if plannerModel == "" {
 		plannerModel = "deepseek-r1:14b"
@@ -54,17 +51,15 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		fallbackModel = "qwen2.5-coder:14b"
 	}
 
-	// 2. Pipeline Config erstellen
 	pipelineConfig := agent.PipelineConfig{
-		AutoSelectMode:   true, // Standardmäßig an, könnte man auch in Config auslagern
+		AutoSelectMode:   true,
 		PlannerModel:     plannerModel,
 		CoderModel:       coderModel,
 		FallbackModel:    fallbackModel,
-		EmbedderModel:    h.config.LLM.EmbeddingModel, // Wichtig: Auch das Embedding Model aus Config nutzen
-		EnableValidation: true,                        // Standardmäßig an
+		EmbedderModel:    h.config.LLM.EmbeddingModel,
+		EnableValidation: true,
 	}
 
-	// 3. Overrides aus dem Request anwenden (falls der User im Frontend etwas anderes wählt)
 	if req.PlannerModel != nil {
 		pipelineConfig.PlannerModel = *req.PlannerModel
 	}
@@ -78,14 +73,13 @@ func (h *ChatHandler) Chat(w http.ResponseWriter, r *http.Request) {
 		pipelineConfig.EnableValidation = *req.EnableValidation
 	}
 
-	// 4. Ausführen
 	execution, err := h.agent.Execute(r.Context(), req.ProjectID, req.Message, pipelineConfig)
 	if err != nil {
-		// Fehler loggen wäre hier gut
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"execution": execution})
+	// Error ignoriert
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"execution": execution})
 }

@@ -73,18 +73,14 @@ func (s *RepoStore) ensureSchema(ctx context.Context) error {
 }
 
 // Save erstellt oder aktualisiert ein Repository
-// Verwendet optimistische Strategie: Erst versuchen zu erstellen, bei Konflikt updaten
 func (s *RepoStore) Save(ctx context.Context, repo *domain.Repository) error {
 	if repo.ID == uuid.Nil {
 		repo.ID = uuid.New()
 	}
 
-	// Timestamp aktualisieren
 	repo.UpdatedAt = time.Now()
-
 	properties := s.repoToProperties(repo)
 
-	// Strategie: Erst versuchen zu erstellen (schneller für neue Objekte)
 	_, err := s.client.Data().Creator().
 		WithClassName(ClassRepository).
 		WithID(repo.ID.String()).
@@ -92,10 +88,9 @@ func (s *RepoStore) Save(ctx context.Context, repo *domain.Repository) error {
 		Do(ctx)
 
 	if err == nil {
-		return nil // Erfolg beim Erstellen
+		return nil
 	}
 
-	// Bei Konflikt (409/422 "already exists") oder anderen Fehlern: Update versuchen
 	if isConflictError(err) {
 		return s.client.Data().Updater().
 			WithClassName(ClassRepository).
@@ -115,7 +110,6 @@ func (s *RepoStore) FindByID(ctx context.Context, id uuid.UUID) (*domain.Reposit
 		Do(ctx)
 
 	if err != nil {
-		// Weaviate gibt manchmal 404 als Error zurück
 		if isNotFoundError(err) {
 			return nil, ErrRepositoryNotFound
 		}
@@ -152,7 +146,7 @@ func (s *RepoStore) FindAll(ctx context.Context) ([]*domain.Repository, error) {
 	resp, err := s.client.GraphQL().Get().
 		WithClassName(ClassRepository).
 		WithFields(fields...).
-		WithLimit(1000). // Erhöht von 100
+		WithLimit(1000).
 		Do(ctx)
 
 	if err != nil {
@@ -194,7 +188,6 @@ func (s *RepoStore) repoToProperties(repo *domain.Repository) map[string]any {
 		"total_executions": repo.TotalExecutions,
 	}
 
-	// Optionale Felder nur hinzufügen wenn sie gesetzt sind
 	if !repo.LastIndexed.IsZero() {
 		properties["last_indexed"] = repo.LastIndexed
 	}
@@ -207,7 +200,6 @@ func (s *RepoStore) repoToProperties(repo *domain.Repository) map[string]any {
 		properties["error_msg"] = repo.ErrorMsg
 	}
 
-	// JSON Felder serialisieren
 	if len(repo.IndexConfig) > 0 {
 		if jsonData, err := json.Marshal(repo.IndexConfig); err == nil {
 			properties["index_config"] = string(jsonData)
@@ -241,7 +233,6 @@ func (s *RepoStore) mapObjectToRepo(obj *models.Object) (*domain.Repository, err
 		DefaultPipeline: make(map[string]any),
 	}
 
-	// String Felder
 	if v, ok := props["name"].(string); ok {
 		repo.Name = v
 	}
@@ -255,12 +246,10 @@ func (s *RepoStore) mapObjectToRepo(obj *models.Object) (*domain.Repository, err
 		repo.ErrorMsg = v
 	}
 
-	// Boolean
 	if v, ok := props["is_managed"].(bool); ok {
 		repo.IsManaged = v
 	}
 
-	// Integer (kommen als float64 aus JSON)
 	if v, ok := props["file_count"].(float64); ok {
 		repo.FileCount = int(v)
 	}
@@ -271,7 +260,6 @@ func (s *RepoStore) mapObjectToRepo(obj *models.Object) (*domain.Repository, err
 		repo.TotalExecutions = int(v)
 	}
 
-	// Timestamps
 	if v, ok := props["created_at"].(string); ok {
 		if t, err := time.Parse(time.RFC3339, v); err == nil {
 			repo.CreatedAt = t
@@ -293,12 +281,11 @@ func (s *RepoStore) mapObjectToRepo(obj *models.Object) (*domain.Repository, err
 		}
 	}
 
-	// JSON Felder deserialisieren
 	if v, ok := props["index_config"].(string); ok && v != "" {
-		json.Unmarshal([]byte(v), &repo.IndexConfig)
+		_ = json.Unmarshal([]byte(v), &repo.IndexConfig)
 	}
 	if v, ok := props["default_pipeline"].(string); ok && v != "" {
-		json.Unmarshal([]byte(v), &repo.DefaultPipeline)
+		_ = json.Unmarshal([]byte(v), &repo.DefaultPipeline)
 	}
 
 	return repo, nil
@@ -313,7 +300,6 @@ func (s *RepoStore) parseGraphQLResult(resp *models.GraphQLResponse) ([]*domain.
 
 	objects, ok := data[ClassRepository].([]any)
 	if !ok {
-		// Keine Ergebnisse ist ok
 		return []*domain.Repository{}, nil
 	}
 
@@ -327,7 +313,6 @@ func (s *RepoStore) parseGraphQLResult(resp *models.GraphQLResponse) ([]*domain.
 
 		repo, err := s.parseGraphQLObject(pmap)
 		if err != nil {
-			// Logging wäre hier gut, aber erstmal skippen
 			continue
 		}
 
@@ -360,7 +345,6 @@ func (s *RepoStore) parseGraphQLObject(pmap map[string]any) (*domain.Repository,
 		DefaultPipeline: make(map[string]any),
 	}
 
-	// String Felder
 	if v, ok := pmap["name"].(string); ok {
 		repo.Name = v
 	}
@@ -374,12 +358,10 @@ func (s *RepoStore) parseGraphQLObject(pmap map[string]any) (*domain.Repository,
 		repo.ErrorMsg = v
 	}
 
-	// Boolean
 	if v, ok := pmap["is_managed"].(bool); ok {
 		repo.IsManaged = v
 	}
 
-	// Integer
 	if v, ok := pmap["file_count"].(float64); ok {
 		repo.FileCount = int(v)
 	}
@@ -390,7 +372,6 @@ func (s *RepoStore) parseGraphQLObject(pmap map[string]any) (*domain.Repository,
 		repo.TotalExecutions = int(v)
 	}
 
-	// Timestamps
 	if v, ok := pmap["created_at"].(string); ok {
 		repo.CreatedAt, _ = time.Parse(time.RFC3339, v)
 	}
@@ -404,18 +385,16 @@ func (s *RepoStore) parseGraphQLObject(pmap map[string]any) (*domain.Repository,
 		repo.LastExecutedAt, _ = time.Parse(time.RFC3339, v)
 	}
 
-	// JSON Felder
 	if v, ok := pmap["index_config"].(string); ok && v != "" {
-		json.Unmarshal([]byte(v), &repo.IndexConfig)
+		_ = json.Unmarshal([]byte(v), &repo.IndexConfig)
 	}
 	if v, ok := pmap["default_pipeline"].(string); ok && v != "" {
-		json.Unmarshal([]byte(v), &repo.DefaultPipeline)
+		_ = json.Unmarshal([]byte(v), &repo.DefaultPipeline)
 	}
 
 	return repo, nil
 }
 
-// isConflictError prüft ob der Fehler ein Konflikt (already exists) ist
 func isConflictError(err error) bool {
 	if err == nil {
 		return false
@@ -426,7 +405,6 @@ func isConflictError(err error) bool {
 		strings.Contains(errStr, "status code: 409")
 }
 
-// isNotFoundError prüft ob der Fehler ein "Not Found" ist
 func isNotFoundError(err error) bool {
 	if err == nil {
 		return false
