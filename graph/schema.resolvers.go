@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,22 +67,21 @@ func (r *mutationResolver) UploadRepository(ctx context.Context, name string, fi
 
 	// 2. Zielpfad vorbereiten (nutzt Config für UploadDir)
 	projectID := uuid.New()
-	uploadDir := r.Config.Storage.UploadDir // Stelle sicher, dass r.Config verfügbar ist (siehe Schritt 4)
+	uploadDir := r.Config.Storage.UploadDir // Stelle sicher, dass r.Config verfügbar ist
 	targetDir := filepath.Join(uploadDir, projectID.String())
 
-	// Verzeichnis erstellen
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	// Verzeichnis erstellen (G301: 0750 statt 0755)
+	if err := os.MkdirAll(targetDir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create target directory: %w", err)
 	}
 
-	// 3. Entpacken (Logik adaptiert aus upload.go)
+	// 3. Entpacken
 	if err := unzipFile(file.File, file.Size, targetDir); err != nil {
 		os.RemoveAll(targetDir) // Aufräumen bei Fehler
 		return nil, fmt.Errorf("failed to unzip: %w", err)
 	}
 
-	// 4. Repo erstellen (via RepoService)
-	// Wir setzen isManaged=true, da wir die Dateien verwalten
+	// 4. Repo erstellen
 	repo, err := r.RepoService.Create(ctx, name, targetDir, true)
 	if err != nil {
 		os.RemoveAll(targetDir)
@@ -113,7 +113,6 @@ func (r *mutationResolver) Register(ctx context.Context, username string, passwo
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, username string, password string) (*model.AuthPayload, error) {
-	// Nutzt jetzt die neue Signatur (token, user, error)
 	token, user, err := r.AuthService.Login(ctx, username, password)
 	if err != nil {
 		return nil, errors.New("invalid credentials")
@@ -169,7 +168,6 @@ func (r *mutationResolver) SetEmbeddingModel(ctx context.Context, model string) 
 	}
 
 	for _, repo := range repos {
-		// KORREKTUR: repo.ID ist bereits eine UUID, kein Parse nötig!
 		go func(id uuid.UUID) {
 			_ = r.RepoService.Reindex(context.Background(), id)
 		}(repo.ID)
@@ -196,7 +194,7 @@ func (r *queryResolver) Repositories(ctx context.Context) ([]*model.Repository, 
 func (r *queryResolver) Search(ctx context.Context, query string, limit *int32) ([]*model.SearchResult, error) {
 	l := 10
 	if limit != nil {
-		l = int(*limit) // Konvertierung int32 -> int
+		l = int(*limit)
 	}
 
 	// Request Objekt für den Searcher bauen
@@ -213,13 +211,12 @@ func (r *queryResolver) Search(ctx context.Context, query string, limit *int32) 
 
 	var result []*model.SearchResult
 	for _, h := range hits {
-		// Pointer Helper für String-Feld
 		sig := h.Chunk.Signature
 
 		result = append(result, &model.SearchResult{
 			FilePath:  h.Chunk.FilePath,
-			StartLine: int32(h.Chunk.StartLine),
-			EndLine:   int32(h.Chunk.EndLine),
+			StartLine: safeInt32(h.Chunk.StartLine), // G115 fix
+			EndLine:   safeInt32(h.Chunk.EndLine),   // G115 fix
 			Content:   h.Chunk.Content,
 			Score:     h.CombinedScore,
 			Signature: &sig,
@@ -230,7 +227,6 @@ func (r *queryResolver) Search(ctx context.Context, query string, limit *int32) 
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	// Middleware Import muss vorhanden sein!
 	userID, err := middleware.GetUserIDFromContext(ctx)
 	if err != nil {
 		return nil, nil // Kein User eingeloggt
@@ -245,7 +241,6 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 
 // LlmInfo is the resolver for the llmInfo field.
 func (r *queryResolver) LlmInfo(ctx context.Context) (*model.LLMInfo, error) {
-	// Einfacher Aufruf über das Interface!
 	available, err := r.Embedder.ListModels(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch models: %w", err)
@@ -266,17 +261,16 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 
+// MaxUnzipSize definition duplicate handling (see upload.go for constant)
+const resolverMaxUnzipSize = 100 * 1024 * 1024
 
 func unzipFile(r io.Reader, size int64, dest string) error {
-	// graphql.Upload.File ist ein io.ReadSeeker, wir brauchen aber ReaderAt für zip.NewReader
-	// Da File oft ein *os.File ist, können wir casten, oder wir lesen alles in den Speicher (weniger effizient).
-	// Besser: Wir nutzen einen Adapter, wenn ReaderAt benötigt wird.
-
-	// Da zip.NewReader ReaderAt benötigt, und graphql.Upload meistens eine temp Datei auf Disk ist:
 	file, ok := r.(io.ReaderAt)
 	if !ok {
 		return fmt.Errorf("upload file interface does not support ReaderAt")
 	}
+
+	dest = filepath.Clean(dest) // G304
 
 	reader, err := zip.NewReader(file, size)
 	if err != nil {
@@ -284,22 +278,25 @@ func unzipFile(r io.Reader, size int64, dest string) error {
 	}
 
 	for _, f := range reader.File {
+		// G305: Zip Slip Protection
 		fpath := filepath.Join(dest, f.Name)
-
-		// Zip Slip Protection
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+		if !strings.HasPrefix(fpath, dest+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path: %s", fpath)
 		}
 
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
+			// G301: 0750
+			if err := os.MkdirAll(fpath, 0750); err != nil {
+				return err
+			}
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(fpath), 0750); err != nil {
 			return err
 		}
 
+		// G304 mitigated by cleaning and prefix check
 		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return err
@@ -307,19 +304,34 @@ func unzipFile(r io.Reader, size int64, dest string) error {
 
 		rc, err := f.Open()
 		if err != nil {
-			outFile.Close()
+			_ = outFile.Close() // G104
 			return err
 		}
 
-		_, err = io.Copy(outFile, rc)
-		outFile.Close()
-		rc.Close()
+		// G110
+		written, err := io.CopyN(outFile, rc, resolverMaxUnzipSize)
 		if err != nil {
+			if err == io.EOF {
+				err = nil
+			} else {
+				_ = outFile.Close()
+				_ = rc.Close()
+				if written >= resolverMaxUnzipSize {
+					return fmt.Errorf("zip file too large")
+				}
+				return err
+			}
+		}
+
+		if err := outFile.Close(); err != nil {
+			_ = rc.Close()
 			return err
 		}
+		_ = rc.Close()
 	}
 	return nil
 }
+
 func mapDomainRepoToModel(d *domain.Repository) *model.Repository {
 	return &model.Repository{
 		ID:          d.ID.String(),
@@ -327,15 +339,27 @@ func mapDomainRepoToModel(d *domain.Repository) *model.Repository {
 		Path:        d.Path,
 		Status:      string(d.Status),
 		LastIndexed: nil,
-		FileCount:   int32(d.FileCount),
-		ChunkCount:  int32(d.ChunkCount),
+		FileCount:   safeInt32(d.FileCount),  // G115 fix
+		ChunkCount:  safeInt32(d.ChunkCount), // G115 fix
 		ErrorMsg:    &d.ErrorMsg,
 	}
 }
+
 func mapDomainUserToModel(u *domain.User) *model.User {
 	return &model.User{
 		ID:       u.ID.String(),
 		Username: u.Username,
 		Role:     string(u.Role),
 	}
+}
+
+// G115 helper
+func safeInt32(n int) int32 {
+	if n > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if n < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(n)
 }

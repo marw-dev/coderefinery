@@ -43,13 +43,15 @@ func (idx *Indexer) DeleteIndex(ctx context.Context, repo *domain.Repository) er
 }
 
 func (idx *Indexer) DeleteAllIndices(ctx context.Context) error {
-	log.Println("WARNING: Deleting ALL search indices (not implemented via vectorStore, doing nothing safely or use specific cleanup logic)")
+	log.Println("WARNING: Deleting ALL search indices (not implemented via vectorStore)")
 	return nil
 }
 
 func (idx *Indexer) loadGitIgnore(rootPath string) {
 	idx.ignorePatterns = []string{}
-	file, err := os.Open(filepath.Join(rootPath, ".gitignore"))
+	// G304: Clean path
+	safePath := filepath.Clean(filepath.Join(rootPath, ".gitignore"))
+	file, err := os.Open(safePath)
 	if err != nil {
 		return
 	}
@@ -135,7 +137,9 @@ func (idx *Indexer) processFile(ctx context.Context, repoID uuid.UUID, path stri
 	}
 
 	p := parser.GetParser(lang)
-	content, err := os.ReadFile(path)
+	// G304: Path traversal protection
+	safePath := filepath.Clean(path)
+	content, err := os.ReadFile(safePath)
 	if err != nil {
 		return err
 	}

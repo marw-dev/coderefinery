@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,13 +16,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// MaxUnzipSizeLimiter: Maximale Größe einer entpackten Datei (z.B. 100 MB)
+const MaxUnzipSize = 100 * 1024 * 1024
+
 type UploadHandler struct {
 	repoService *services.RepositoryService
 	uploadDir   string
 }
 
 func NewUploadHandler(service *services.RepositoryService, uploadDir string) *UploadHandler {
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+	// G301: Berechtigungen einschränken (0750)
+	if err := os.MkdirAll(uploadDir, 0750); err != nil {
 		fmt.Printf("Warning: Could not create upload dir: %v\n", err)
 	}
 	return &UploadHandler{
@@ -81,30 +86,33 @@ func (h *UploadHandler) HandleUpload(c *gin.Context) {
 }
 
 func unzip(r io.ReaderAt, size int64, dest string) error {
+	dest = filepath.Clean(dest)
+
 	reader, err := zip.NewReader(r, size)
 	if err != nil {
 		return err
 	}
 
 	for _, f := range reader.File {
+		// G305: Zip Slip Protection
 		fpath := filepath.Join(dest, f.Name)
-
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+		if !strings.HasPrefix(fpath, dest+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path: %s", fpath)
 		}
 
 		if f.FileInfo().IsDir() {
-			// Error check hinzugefügt
-			if err := os.MkdirAll(fpath, os.ModePerm); err != nil {
+			// G301: Berechtigungen einschränken (0750)
+			if err := os.MkdirAll(fpath, 0750); err != nil {
 				return err
 			}
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(fpath), 0750); err != nil {
 			return err
 		}
 
+		// G304: Path traversal is mitigated by the prefix check above and Clean
 		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
 			return err
@@ -112,17 +120,45 @@ func unzip(r io.ReaderAt, size int64, dest string) error {
 
 		rc, err := f.Open()
 		if err != nil {
-			outFile.Close()
+			_ = outFile.Close() // G104
 			return err
 		}
 
-		_, err = io.Copy(outFile, rc)
-
-		outFile.Close()
-		rc.Close()
+		// G110
+		// Wir nutzen io.CopyN (via LimitReader Logik) um nicht unendlich viel zu schreiben
+		written, err := io.CopyN(outFile, rc, MaxUnzipSize)
 		if err != nil {
+			if err == io.EOF {
+				// EOF ist okay, File war kleiner als Limit
+				err = nil
+			} else if written >= MaxUnzipSize {
+				_ = outFile.Close()
+				_ = rc.Close()
+				return fmt.Errorf("file %s too large (decompression bomb protection)", f.Name)
+			} else {
+				_ = outFile.Close()
+				_ = rc.Close()
+				return err
+			}
+		}
+
+		// G104: Handle Close errors
+		if err := outFile.Close(); err != nil {
+			_ = rc.Close()
 			return err
 		}
+		_ = rc.Close()
 	}
 	return nil
+}
+
+// safeInt32 konvertiert int sicher zu int32 (G115 Mitigation)
+func safeInt32(n int) int32 {
+	if n > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if n < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(n)
 }
