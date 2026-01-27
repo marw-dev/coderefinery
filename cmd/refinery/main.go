@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"coderefinery/graph"
 	"coderefinery/internal/adapters/indexer"
@@ -12,8 +14,11 @@ import (
 	storageWeaviate "coderefinery/internal/adapters/storage/weaviate"
 
 	"coderefinery/internal/config"
+	"coderefinery/internal/core/domain"
 	"coderefinery/internal/core/services"
 
+	"coderefinery/internal/agent"
+	"coderefinery/internal/api/handlers"
 	"coderefinery/internal/infrastructure/auth"
 	"coderefinery/internal/infrastructure/cache"
 	"coderefinery/internal/infrastructure/llm"
@@ -33,6 +38,36 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+// AgentSearchAdapter verbindet den existierenden Searcher mit dem Interface des Agenten
+type AgentSearchAdapter struct {
+	searcher *search.Searcher
+}
+
+func (a *AgentSearchAdapter) Search(ctx context.Context, query string, topK int) ([]agent.CodeChunk, error) {
+	req := domain.SearchRequest{
+		Query:    query,
+		Limit:    topK,
+		MinScore: 0.4, // Sinnvoller Default für den Agenten
+	}
+
+	results, err := a.searcher.Search(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	chunks := make([]agent.CodeChunk, len(results))
+	for i, res := range results {
+		chunks[i] = agent.CodeChunk{
+			Content:   res.Chunk.Content,
+			FilePath:  res.Chunk.FilePath,
+			Score:     res.CombinedScore,
+			LineStart: res.Chunk.StartLine,
+			LineEnd:   res.Chunk.EndLine,
+		}
+	}
+	return chunks, nil
+}
 
 func main() {
 	// 1. Config laden
@@ -78,8 +113,6 @@ func main() {
 	defer db.Close()
 
 	// 4. Vector Datenbank (Weaviate) Setup
-
-	// A) Weaviate Client initialisieren
 	log.Info().Str("host", cfg.VectorDB.Host).Msg("Connecting to Weaviate")
 
 	wCfg := weaviate.Config{
@@ -95,7 +128,6 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to create Weaviate client")
 	}
 
-	// B) Vector Store initialisieren (für Code Chunks)
 	vectorStore, err := vectordb.NewWeaviateVectorStore(weaviateClient, cfg.VectorDB.IndexName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to init vector store")
@@ -104,13 +136,11 @@ func main() {
 	// 5. Adapter & Services initialisieren
 
 	// Stores
-	// RepoStore nutzt jetzt Weaviate für Metadaten
 	repoStore, err := storageWeaviate.NewRepoStore(weaviateClient)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to init weaviate repo store")
 	}
 
-	// UserStore bleibt bei Postgres (Auth)
 	userStore := storagePG.NewUserStore(db)
 
 	// Embedder (Ollama)
@@ -135,7 +165,20 @@ func main() {
 	jwtService := auth.NewJWTService(cfg.Auth.JWTSecret, cfg.Auth.JWTExpiry)
 	authService := services.NewAuthService(userStore, jwtService)
 
-	// 6. GraphQL Server Setup
+	// --- Agent Service Integration ---
+
+	// A) LLM Provider für den Agenten (Generation)
+	llmProvider := llm.NewOllamaProvider(embedder, cfg.LLM.Host)
+
+	// B) Search Adapter (Searcher -> Agent Interface)
+	searchAdapter := &AgentSearchAdapter{searcher: searcher}
+
+	// C) Agent Service & Handler
+	agentLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	agentService := agent.NewAgentService(llmProvider, searchAdapter, agentLogger)
+	chatHandler := handlers.NewChatHandler(agentService, cfg)
+
+	// 6. Server Setup
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -164,19 +207,24 @@ func main() {
 		},
 	}))
 
+	// GraphQL Endpoint
 	r.POST("/query", middleware.AuthMiddleware(jwtService), func(c *gin.Context) {
 		srv.ServeHTTP(c.Writer, c.Request)
 	})
+
+	// Agent Chat Endpoint
+	// gin.WrapF konvertiert http.HandlerFunc (Chat) zu gin.HandlerFunc
+	r.POST("/chat", middleware.AuthMiddleware(jwtService), gin.WrapF(chatHandler.Chat))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "up",
 			"env":    cfg.Environment,
-			"mode":   "hybrid (auth=pg, repos=weaviate)",
+			"mode":   "hybrid (auth=pg, repos=weaviate, agent=enabled)",
 		})
 	})
 
-	log.Info().Str("port", cfg.Server.Port).Msg("Playground ready")
+	log.Info().Str("port", cfg.Server.Port).Msg("Server ready")
 	if err := r.Run(":" + cfg.Server.Port); err != nil {
 		log.Fatal().Err(err).Msg("Server failed to start")
 	}
